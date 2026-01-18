@@ -19,8 +19,5 @@
   ],
   "author": "Crypto Prediction Team",
   "license": "MIT",
-  "dependencies": {},
-  "devDependencies": {
-    "vercel": "^latest"
-  }
+  "dependencies": {}
 }
