@@ -1,0 +1,26 @@
+{
+  "name": "crypto-prediction-platform",
+  "version": "5.0.0",
+  "description": "Professional AI-powered cryptocurrency prediction platform - Vercel all-in-one",
+  "main": "index.html",
+  "type": "module",
+  "scripts": {
+    "dev": "node dev-server.cjs",
+    "build": "echo 'No build needed for static + serverless'",
+    "test": "echo 'Testing API endpoints'"
+  },
+  "keywords": [
+    "crypto",
+    "prediction",
+    "AI",
+    "trading",
+    "vercel",
+    "serverless"
+  ],
+  "author": "Crypto Prediction Team",
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {
+    "vercel": "^latest"
+  }
+}

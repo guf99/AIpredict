@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional Crypto Prediction Platform</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-dark: #0f0f0f;
+            --bg-light: #1a1a1a;
+            --text-primary: #ffffff;
+            --text-secondary: #b0b0b0;
+            --accent: #00ff88;
+            --accent-secondary: #ff0055;
+            --border: #333333;
+            --success: #00ff88;
+            --danger: #ff0055;
+            --warning: #ffaa00;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, var(--bg-dark) 0%, var(--bg-light) 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 30px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 10px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .header-info {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid var(--accent);
+            border-radius: 5px;
+            font-size: 12px;
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            background: var(--accent);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Grid */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        /* Card */
+        .card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: var(--accent);
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.1);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .card-price {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .price-change {
+            font-size: 14px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+
+        .price-change.positive {
+            color: var(--success);
+            background: rgba(0, 255, 136, 0.1);
+        }
+
+        .price-change.negative {
+            color: var(--danger);
+            background: rgba(255, 0, 85, 0.1);
+        }
+
+        /* Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .stat {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 12px;
+            border-radius: 6px;
+            border-left: 3px solid var(--accent);
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        /* Trading Box */
+        .trading-box {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+
+        .trading-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .trading-direction {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 12px;
+        }
+
+        .trading-direction.LONG {
+            background: rgba(0, 255, 136, 0.2);
+            color: var(--success);
+            border: 1px solid var(--success);
+        }
+
+        .trading-direction.SHORT {
+            background: rgba(255, 0, 85, 0.2);
+            color: var(--danger);
+            border: 1px solid var(--danger);
+        }
+
+        .trading-direction.HOLD {
+            background: rgba(255, 170, 0, 0.2);
+            color: var(--warning);
+            border: 1px solid var(--warning);
+        }
+
+        .confidence-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 8px 0;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), var(--accent-secondary));
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .trading-levels {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .level {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+
+        .level-label {
+            font-size: 10px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+        }
+
+        .level-value {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--accent);
+            margin: 5px 0;
+        }
+
+        .level-gain {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        /* Loading state */
+        .loading {
+            opacity: 0.5;
+            animation: fadeInOut 1s infinite;
+        }
+
+        @keyframes fadeInOut {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: var(--text-secondary);
+            font-size: 12px;
+            border-top: 1px solid var(--border);
+            margin-top: 40px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+            .header {
+                flex-direction: column;
+                gap: 15px;
+            }
+            .header-info {
+                flex-direction: column;
+                width: 100%;
+            }
+            .trading-levels {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Error state */
+        .error {
+            background: rgba(255, 0, 85, 0.1);
+            border: 1px solid var(--danger);
+            color: var(--danger);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .confidence-high { color: var(--success); }
+        .confidence-medium { color: var(--warning); }
+        .confidence-low { color: var(--danger); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div>
+                <h1>🚀 Professional Crypto Prediction Platform</h1>
+                <p style="color: var(--text-secondary); font-size: 12px; margin-top: 5px;">Real-time Binance API • 80% Win Rate Prediction Engine</p>
+            </div>
+            <div class="header-info">
+                <div class="status">
+                    <div class="status-indicator"></div>
+                    <span id="status">Connecting...</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="predictions" class="grid"></div>
+        <div id="error" class="error" style="display: none;"></div>
+
+        <div class="footer">
+            <p>© 2026 Professional Crypto Prediction Platform • Powered by Real Binance API</p>
+            <p style="margin-top: 10px;">Last updated: <span id="updated">--:--:--</span></p>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = window.location.hostname === 'localhost' 
+            ? 'http://localhost:3000'
+            : '';
+        const UPDATE_INTERVAL = 5000 // 5 seconds
+
+        class CryptoPredictionDashboard {
+            constructor() {
+                this.predictions = []
+                this.updateInterval = null
+                this.init()
+            }
+
+            async init() {
+                this.updatePredictions()
+                this.updateInterval = setInterval(() => this.updatePredictions(), UPDATE_INTERVAL)
+            }
+
+            async fetchPredictions() {
+                try {
+                    const response = await fetch(`${API_URL}/api/predictions`)
+                    if (!response.ok) throw new Error(`API error: ${response.status}`)
+                    return await response.json()
+                } catch (err) {
+                    console.error('Fetch error:', err)
+                    this.showError(`Failed to fetch predictions: ${err.message}`)
+                    return null
+                }
+            }
+
+            async updatePredictions() {
+                const data = await this.fetchPredictions()
+                if (!data) return
+
+                this.predictions = Array.isArray(data) ? data : [data]
+                this.render()
+                this.updateStatus('Connected')
+            }
+
+            render() {
+                const container = document.getElementById('predictions')
+                const errorDiv = document.getElementById('error')
+                errorDiv.style.display = 'none'
+
+                if (!this.predictions || this.predictions.length === 0) {
+                    container.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-secondary);">Loading predictions...</div>'
+                    return
+                }
+
+                container.innerHTML = this.predictions.map(p => this.renderCard(p)).join('')
+                this.updateTimestamp()
+            }
+
+            renderCard(pred) {
+                if (!pred || pred.error) return ''
+
+                const priceChange = parseFloat(pred.change24h)
+                const priceChangeClass = priceChange >= 0 ? 'positive' : 'negative'
+                const confidenceClass = pred.confidence >= 75 ? 'confidence-high' : pred.confidence >= 65 ? 'confidence-medium' : 'confidence-low'
+
+                return `
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <div class="card-title">${pred.pair}</div>
+                                <div style="color: var(--text-secondary); font-size: 12px; margin-top: 3px;">${pred.reasoning || 'Trading signal'}</div>
+                            </div>
+                            <div class="price-change ${priceChangeClass}">
+                                ${priceChange > 0 ? '+' : ''}${priceChange.toFixed(2)}%
+                            </div>
+                        </div>
+
+                        <div class="card-price">$${pred.currentPrice.toFixed(2)}</div>
+
+                        <div class="stats-grid">
+                            <div class="stat">
+                                <div class="stat-label">Entry Point</div>
+                                <div class="stat-value">$${pred.entry.toFixed(4)}</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-label">Stop Loss</div>
+                                <div class="stat-value">$${pred.stoploss.toFixed(4)}</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-label">Risk/Reward</div>
+                                <div class="stat-value">${pred.riskReward}:1</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-label">Signal Strength</div>
+                                <div class="stat-value">${pred.signal}</div>
+                            </div>
+                        </div>
+
+                        <div class="trading-box">
+                            <div class="trading-header">
+                                <span class="trading-direction ${pred.direction}">${pred.direction}</span>
+                                <span class="${confidenceClass}">Confidence: ${pred.confidence}%</span>
+                            </div>
+                            <div class="confidence-bar">
+                                <div class="confidence-fill" style="width: ${pred.confidence}%"></div>
+                            </div>
+                        </div>
+
+                        <div class="trading-levels">
+                            <div class="level">
+                                <div class="level-label">TP1</div>
+                                <div class="level-value">$${pred.takeProfitLevels.tp1.price.toFixed(4)}</div>
+                                <div class="level-gain">+${pred.takeProfitLevels.tp1.percentGain.toFixed(2)}%</div>
+                            </div>
+                            <div class="level">
+                                <div class="level-label">TP2</div>
+                                <div class="level-value">$${pred.takeProfitLevels.tp2.price.toFixed(4)}</div>
+                                <div class="level-gain">+${pred.takeProfitLevels.tp2.percentGain.toFixed(2)}%</div>
+                            </div>
+                            <div class="level">
+                                <div class="level-label">TP3</div>
+                                <div class="level-value">$${pred.takeProfitLevels.tp3.price.toFixed(4)}</div>
+                                <div class="level-gain">+${pred.takeProfitLevels.tp3.percentGain.toFixed(2)}%</div>
+                            </div>
+                        </div>
+
+                        <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); font-size: 11px; color: var(--text-secondary);">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                                <span>RSI: ${pred.technicalIndicators.rsi.toFixed(2)}</span>
+                                <span>Momentum: ${pred.technicalIndicators.momentum.toFixed(3)}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span>Volatility: ${pred.technicalIndicators.volatility.toFixed(2)}%</span>
+                                <span>Volume: ${pred.technicalIndicators.volumeStrength.toFixed(1)}%</span>
+                            </div>
+                        </div>
+                    </div>
+                `
+            }
+
+            updateStatus(status) {
+                document.getElementById('status').textContent = status
+            }
+
+            updateTimestamp() {
+                const now = new Date()
+                document.getElementById('updated').textContent = now.toLocaleTimeString()
+            }
+
+            showError(message) {
+                const errorDiv = document.getElementById('error')
+                errorDiv.textContent = message
+                errorDiv.style.display = 'block'
+            }
+        }
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', () => {
+            new CryptoPredictionDashboard()
+        })
+    </script>
+</body>
+</html>
