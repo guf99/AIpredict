@@ -171,16 +171,17 @@ const mockEndpoints = {
       
       if (resp.ok) {
         const data = await resp.json();
-        return Array.isArray(data) ? data : data?.markets || generateMarkets('polymarket', 50);
+        const markets = Array.isArray(data) ? data : data?.markets || generateMarkets('polymarket', 50);
+        return { markets };
       }
     } catch (e) {
       // Fallback to generated mock data if API fails
     }
     
-    return generateMarkets('polymarket', 50);
+    return { markets: generateMarkets('polymarket', 50) };
   },
   '/api/kalshi': async () => {
-    return generateMarkets('kalshi', 50);
+    return { markets: generateMarkets('kalshi', 50) };
   },
   '/api/predictions': async () => {
     const coins = ['BTC', 'ETH', 'BNB', 'XRP', 'SOL', 'ADA', 'DOGE', 'AVAX'];
@@ -405,13 +406,13 @@ const server = http.createServer(async (req, res) => {
       res.setHeader('Pragma', 'no-cache');
       res.setHeader('Expires', '0');
       res.writeHead(200);
-      res.end(JSON.stringify(Array.isArray(data) ? data : []));
+      res.end(JSON.stringify({ markets: Array.isArray(data) ? data : data?.markets || [] }));
     } catch (error) {
       res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
       res.setHeader('Pragma', 'no-cache');
       res.setHeader('Expires', '0');
       res.writeHead(200);
-      res.end(JSON.stringify([]));
+      res.end(JSON.stringify({ markets: [], error: 'Kalshi unavailable' }));
     }
     return;
   }
