@@ -2686,10 +2686,14 @@
             try {
                 pmStatus.textContent = 'SYNCING';
                 const resp = await fetch(POLYMARKET_ENDPOINT, { cache: 'no-store' });
+                
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                
                 const text = await resp.text();
                 let data = { markets: [] };
                 try {
-                    data = JSON.parse(text);
+                    const parsed = JSON.parse(text);
+                    data = parsed;
                 } catch {
                     data = { markets: [] };
                 }
@@ -2698,7 +2702,8 @@
                     renderPolymarket(markets);
                 }
                 pmStatus.textContent = markets.length ? 'ONLINE' : 'STANDBY';
-            } catch {
+            } catch (error) {
+                console.error('Polymarket fetch error:', error);
                 if (currentMarketTab === 'polymarket' || currentMarketTab === 'combined') {
                     renderPolymarket([]);
                 }
@@ -2847,13 +2852,19 @@
                 });
                 clearTimeout(timeoutId);
                 
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                
                 const text = await resp.text();
                 let data = [];
                 try {
-                    data = JSON.parse(text);
-                } catch {
+                    const parsed = JSON.parse(text);
+                    // Handle both array and object with markets property
+                    data = Array.isArray(parsed) ? parsed : (parsed?.markets || []);
+                } catch (e) {
+                    console.error('Parse error:', e);
                     data = [];
                 }
+                
                 const markets = Array.isArray(data) ? data : [];
                 
                 // Only render if on kalshi/combined tab
@@ -2869,6 +2880,7 @@
                     pmStatus.textContent = markets.length ? 'ONLINE' : 'STANDBY';
                 }
             } catch (error) {
+                console.error('Kalshi fetch error:', error);
                 if (currentMarketTab === 'kalshi' || currentMarketTab === 'combined') {
                     if (error.name !== 'AbortError') {
                         renderKalshi([]);
