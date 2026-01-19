@@ -26,23 +26,42 @@ const mockEndpoints = {
   }),
   '/api/predictions': async () => {
     const coins = ['BTC', 'ETH', 'BNB', 'XRP', 'SOL', 'ADA', 'DOGE', 'AVAX'];
-    const provider = (process.env.PRICE_PROVIDER || 'binance').toLowerCase();
+    const provider = (process.env.PRICE_PROVIDER || '').toLowerCase();
 
-    const fetchJsonNative = (apiUrl) => new Promise((resolve, reject) => {
-      https.get(apiUrl, (resp) => {
+    const REQUEST_HEADERS = {
+      'User-Agent': 'Mozilla/5.0',
+      'Accept': 'application/json'
+    };
+    const CRYPTOCOMPARE_KEY = process.env.CRYPTOCOMPARE_API_KEY;
+    const COINGECKO_KEY = process.env.COINGECKO_API_KEY;
+
+    const fetchJsonNative = (apiUrl, headers = {}) => new Promise((resolve, reject) => {
+      const urlObj = new URL(apiUrl);
+      const req = https.request({
+        method: 'GET',
+        hostname: urlObj.hostname,
+        path: `${urlObj.pathname}${urlObj.search}`,
+        headers
+      }, (resp) => {
         let data = '';
         resp.on('data', (chunk) => (data += chunk));
         resp.on('end', () => {
           if (resp.statusCode !== 200) return reject(new Error('HTTP error'));
           try { resolve(JSON.parse(data)); } catch (e) { reject(e); }
         });
-      }).on('error', reject);
+      });
+      req.on('error', reject);
+      req.end();
     });
 
-    const fetchJsonPowerShell = (apiUrl) => new Promise((resolve, reject) => {
+    const fetchJsonPowerShell = (apiUrl, headers = {}) => new Promise((resolve, reject) => {
+      const headerPairs = Object.entries(headers)
+        .map(([k, v]) => `'${k}'='${String(v).replace(/'/g, "''")}'`)
+        .join('; ');
+      const headerExpr = headerPairs ? `-Headers @{${headerPairs}}` : '';
       const args = [
         '-Command',
-        `Invoke-WebRequest '${apiUrl}' -UseBasicParsing | Select-Object -ExpandProperty Content`
+        `Invoke-WebRequest '${apiUrl}' ${headerExpr} -UseBasicParsing | Select-Object -ExpandProperty Content`
       ];
       execFile('powershell', args, { maxBuffer: 10 * 1024 * 1024 }, (err, stdout) => {
         if (err) return reject(err);
@@ -50,33 +69,21 @@ const mockEndpoints = {
       });
     });
 
-    const fetchJson = async (apiUrl) => {
+    const fetchJson = async (apiUrl, headers = {}) => {
       try {
-        return await fetchJsonNative(apiUrl);
+        return await fetchJsonNative(apiUrl, headers);
       } catch {
-        return await fetchJsonPowerShell(apiUrl);
+        return await fetchJsonPowerShell(apiUrl, headers);
       }
-    };
-
-    const fetchBinanceAll = async () => {
-      const symbols = coins.map((s) => `${s}USDT`);
-      const query = encodeURIComponent(JSON.stringify(symbols));
-      const data = await fetchJson(`https://api.binance.com/api/v3/ticker/24hr?symbols=${query}`);
-      const map = {};
-      data.forEach((item) => {
-        const sym = item.symbol.replace('USDT', '');
-        map[sym] = {
-          price: Number(item.lastPrice),
-          change24h: Number(item.priceChangePercent),
-          source: 'binance'
-        };
-      });
-      return map;
     };
 
     const fetchCryptoCompareAll = async () => {
       const fsyms = coins.join(',');
-      const data = await fetchJson(`https://min-api.cryptocompare.com/data/pricemultifull?fsyms=${fsyms}&tsyms=USD`);
+      const headers = {
+        ...REQUEST_HEADERS,
+        ...(CRYPTOCOMPARE_KEY ? { authorization: `Apikey ${CRYPTOCOMPARE_KEY}` } : {})
+      };
+      const data = await fetchJson(`https://min-api.cryptocompare.com/data/pricemultifull?fsyms=${fsyms}&tsyms=USD`, headers);
       const raw = data?.RAW || {};
       const map = {};
       coins.forEach((sym) => {
@@ -103,7 +110,11 @@ const mockEndpoints = {
         AVAX: 'avalanche-2'
       };
       const list = coins.map((s) => ids[s]).join(',');
-      const data = await fetchJson(`https://api.coingecko.com/api/v3/simple/price?ids=${list}&vs_currencies=usd&include_24hr_change=true`);
+      const headers = {
+        ...REQUEST_HEADERS,
+        ...(COINGECKO_KEY ? { 'x-cg-pro-api-key': COINGECKO_KEY } : {})
+      };
+      const data = await fetchJson(`https://api.coingecko.com/api/v3/simple/price?ids=${list}&vs_currencies=usd&include_24hr_change=true`, headers);
       const map = {};
       coins.forEach((sym) => {
         const entry = data[ids[sym]];
@@ -119,12 +130,15 @@ const mockEndpoints = {
 
     let marketMap = {};
     try {
-      if (provider === 'cryptocompare') {
-        marketMap = await fetchCryptoCompareAll();
-      } else if (provider === 'coingecko') {
+      if (provider === 'coingecko') {
         marketMap = await fetchCoingeckoAll();
+      } else if (provider === 'cryptocompare') {
+        marketMap = await fetchCryptoCompareAll();
       } else {
-        marketMap = await fetchBinanceAll();
+        marketMap = await fetchCryptoCompareAll();
+        if (!Object.keys(marketMap).length) {
+          marketMap = await fetchCoingeckoAll();
+        }
       }
     } catch {
       marketMap = {};
@@ -156,7 +170,7 @@ const mockEndpoints = {
           pair: `${coin}/USDT`,
           currentPrice: Number(market.price.toFixed(2)),
           change24h: Number(market.change24h.toFixed(2)),
-          source: market.source || 'binance',
+          source: market.source || 'cryptocompare',
           direction,
           signal,
           confidence: Math.round(confidence),
