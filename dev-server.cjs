@@ -13,6 +13,7 @@ const path = require('path');
 const { URL } = require('url');
 
 const PORT = Number(process.env.PORT) || 5173;
+const PORT_CANDIDATES = Array.from({ length: 10 }, (_, idx) => PORT + idx);
 const HOST = '127.0.0.1';
 
 // API endpoints for local testing (real-time with fallback)
@@ -24,6 +25,53 @@ const mockEndpoints = {
     environment: 'development',
     timestamp: new Date().toISOString()
   }),
+  '/api/polymarket': async () => {
+    const url = 'https://gamma-api.polymarket.com/markets?active=true&closed=false&limit=50&order=volume&ascending=false';
+    const headers = {
+      'User-Agent': 'Mozilla/5.0',
+      'Accept': 'application/json'
+    };
+
+    const fetchJsonNative = (apiUrl) => new Promise((resolve, reject) => {
+      const urlObj = new URL(apiUrl);
+      const req = https.request({
+        method: 'GET',
+        hostname: urlObj.hostname,
+        path: `${urlObj.pathname}${urlObj.search}`,
+        headers,
+        timeout: 8000
+      }, (resp) => {
+        let data = '';
+        resp.on('data', (chunk) => (data += chunk));
+        resp.on('end', () => {
+          if (resp.statusCode !== 200) return reject(new Error(`HTTP ${resp.statusCode}`));
+          try { resolve(JSON.parse(data)); } catch (e) { reject(e); }
+        });
+      });
+      req.on('error', reject);
+      req.on('timeout', () => {
+        req.destroy(new Error('Timeout'));
+      });
+      req.end();
+    });
+
+    const fetchJsonPowerShell = (apiUrl) => new Promise((resolve, reject) => {
+      const args = [
+        '-Command',
+        `[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest '${apiUrl}' -Headers @{"User-Agent"="Mozilla/5.0";"Accept"="application/json"} -UseBasicParsing | Select-Object -ExpandProperty Content`
+      ];
+      execFile('powershell', args, { maxBuffer: 10 * 1024 * 1024 }, (err, stdout) => {
+        if (err) return reject(err);
+        try { resolve(JSON.parse(stdout)); } catch (e) { reject(e); }
+      });
+    });
+
+    try {
+      return await fetchJsonNative(url);
+    } catch {
+      return await fetchJsonPowerShell(url);
+    }
+  },
   '/api/predictions': async () => {
     const coins = ['BTC', 'ETH', 'BNB', 'XRP', 'SOL', 'ADA', 'DOGE', 'AVAX'];
     const provider = (process.env.PRICE_PROVIDER || '').toLowerCase();
@@ -222,6 +270,24 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  if (pathname === '/api/polymarket') {
+    try {
+      const data = await mockEndpoints['/api/polymarket']();
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      res.writeHead(200);
+      res.end(JSON.stringify({ markets: Array.isArray(data) ? data : data?.markets || [] }));
+    } catch (error) {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      res.writeHead(200);
+      res.end(JSON.stringify({ markets: [], error: 'Polymarket unavailable' }));
+    }
+    return;
+  }
+
   if (pathname === '/api/predictions') {
     if (query.symbol) {
       const predictions = await mockEndpoints['/api/predictions']();
@@ -284,8 +350,20 @@ const server = http.createServer(async (req, res) => {
   });
 });
 
-server.listen(PORT, HOST, () => {
-  console.log(`
+let portIndex = 0;
+
+const listenOnPort = () => {
+  const port = PORT_CANDIDATES[portIndex];
+  if (!port) {
+    console.error('No available ports found.');
+    process.exit(1);
+  }
+
+  server.listen(port, HOST, () => {
+    try {
+      fs.writeFileSync(path.join(__dirname, 'live-port.txt'), String(port));
+    } catch {}
+    console.log(`
 ╔════════════════════════════════════════════════════════════════════════════════╗
 ║                                                                                ║
 ║        🚀 CRYPTO PREDICTION PLATFORM - LOCAL DEV SERVER                       ║
@@ -295,11 +373,24 @@ server.listen(PORT, HOST, () => {
 
 ✅ Server running!
 
-Dashboard:    http://${HOST}:${PORT}
-API Health:   http://${HOST}:${PORT}/api/health
-Predictions:  http://${HOST}:${PORT}/api/predictions
-Single Coin:  http://${HOST}:${PORT}/api/predictions?symbol=BTC
+Dashboard:    http://${HOST}:${port}
+API Health:   http://${HOST}:${port}/api/health
+Predictions:  http://${HOST}:${port}/api/predictions
+Single Coin:  http://${HOST}:${port}/api/predictions?symbol=BTC
 
 Press Ctrl+C to stop
 `);
+  });
+};
+
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    portIndex += 1;
+    listenOnPort();
+    return;
+  }
+  console.error(err);
+  process.exit(1);
 });
+
+listenOnPort();

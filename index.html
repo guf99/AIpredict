@@ -213,6 +213,94 @@
             pointer-events: none;
         }
 
+        .pm-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 18px;
+        }
+
+        .pm-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 18px;
+        }
+
+        .pm-card {
+            background: rgba(34, 45, 59, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            padding: 16px;
+            display: grid;
+            gap: 12px;
+            min-height: 180px;
+            box-shadow: 0 16px 30px rgba(0, 0, 0, 0.35);
+        }
+
+        .pm-card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .pm-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            object-fit: cover;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .pm-title {
+            font-size: 14px;
+            font-weight: 600;
+            line-height: 1.4;
+        }
+
+        .pm-outcomes {
+            display: grid;
+            gap: 8px;
+        }
+
+        .pm-outcome {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+        }
+
+        .pm-outcome .yes {
+            color: var(--success);
+            background: rgba(47, 227, 127, 0.15);
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+
+        .pm-outcome .no {
+            color: var(--danger);
+            background: rgba(255, 77, 77, 0.15);
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+
+        .pm-meta {
+            font-size: 12px;
+            color: var(--muted);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .pm-status {
+            font-size: 11px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
         .terminal-header {
             display: flex;
             justify-content: space-between;
@@ -592,6 +680,11 @@
 
         <section id="live">
             <div class="container">
+                <div class="pm-header">
+                    <h2>Polymarket</h2>
+                    <div class="pm-status" id="pm-status">SYNCING</div>
+                </div>
+                <div id="pm-grid" class="pm-grid"></div>
                 <div class="live-markets">
                     <div>
                         <h2>Live Markets</h2>
@@ -747,12 +840,15 @@
 
     <script>
         const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-            ? 'http://127.0.0.1:5173'
+            ? window.location.origin
             : '';
         const UPDATE_INTERVAL = 5000;
+        const POLYMARKET_ENDPOINT = `${API_URL}/api/polymarket`;
 
         const marketGrid = document.getElementById('market-grid');
         const lastUpdated = document.getElementById('last-updated');
+        const pmGrid = document.getElementById('pm-grid');
+        const pmStatus = document.getElementById('pm-status');
 
         const formatPrice = (value) => {
             if (value >= 1000) return value.toFixed(2);
@@ -762,9 +858,6 @@
 
         const renderMarkets = (predictions) => {
             marketGrid.innerHTML = predictions.map((pred) => {
-                const chance = Math.min(95, Math.max(5, Math.round(pred.confidence || 50)));
-                const upPrice = Math.max(0.01, (chance / 100)).toFixed(2);
-                const downPrice = Math.max(0.01, (1 - chance / 100)).toFixed(2);
                 const priceChange = Number(pred.change24h || 0);
                 const priceChangeClass = priceChange >= 0 ? 'positive' : 'negative';
                 return `
@@ -773,8 +866,8 @@
                             <div>
                                 <div class="market-title">${pred.pair}</div>
                                 <div class="market-badges">
-                                    <span>${pred.direction || 'HOLD'}</span>
-                                    <span class="chance">${chance}%</span>
+                                    <span>${pred.signal || 'SIGNAL'}</span>
+                                    <span class="chance">${pred.confidence || 0}%</span>
                                 </div>
                             </div>
                             <div style="text-align: right;">
@@ -782,11 +875,13 @@
                                 <div class="price-change ${priceChangeClass}">${priceChange > 0 ? '+' : ''}${priceChange.toFixed(2)}%</div>
                             </div>
                         </div>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                            <div class="pill-up">UP<br />${upPrice}¢</div>
-                            <div class="pill-down">DOWN<br />${downPrice}¢</div>
-                        </div>
                         <div class="market-stats">
+                            <div class="market-stat">Entry: $${Number(pred.entry || 0).toFixed(4)}</div>
+                            <div class="market-stat">Stop Loss: $${Number(pred.stoploss || 0).toFixed(4)}</div>
+                            <div class="market-stat">TP1: $${Number(pred.takeProfitLevels?.tp1?.price || 0).toFixed(4)}</div>
+                            <div class="market-stat">TP2: $${Number(pred.takeProfitLevels?.tp2?.price || 0).toFixed(4)}</div>
+                            <div class="market-stat">TP3: $${Number(pred.takeProfitLevels?.tp3?.price || 0).toFixed(4)}</div>
+                            <div class="market-stat">R/R: ${pred.riskReward || 0}:1</div>
                             <div class="market-stat">RSI: ${pred.technicalIndicators?.rsi?.toFixed(2) ?? '—'}</div>
                             <div class="market-stat">Momentum: ${pred.technicalIndicators?.momentum?.toFixed(3) ?? '—'}</div>
                             <div class="market-stat">Volatility: ${pred.technicalIndicators?.volatility?.toFixed(2) ?? '—'}%</div>
@@ -810,8 +905,71 @@
             }
         };
 
+        const parseArray = (value) => {
+            if (Array.isArray(value)) return value;
+            try {
+                return JSON.parse(value || '[]');
+            } catch {
+                return [];
+            }
+        };
+
+        const renderPolymarket = (markets) => {
+            const topMarkets = markets.slice(0, 8);
+            pmGrid.innerHTML = topMarkets.map((m) => {
+                const outcomes = parseArray(m.outcomes);
+                const prices = parseArray(m.outcomePrices).map((p) => Number(p) || 0);
+                const outcomeRows = outcomes.slice(0, 2).map((o, idx) => {
+                    const pct = Math.round((prices[idx] || 0) * 100);
+                    const badgeClass = idx === 0 ? 'yes' : 'no';
+                    return `
+                        <div class="pm-outcome">
+                            <span>${o}</span>
+                            <span class="${badgeClass}">${pct}%</span>
+                        </div>
+                    `;
+                }).join('');
+
+                return `
+                    <div class="pm-card">
+                        <div class="pm-card-header">
+                            <img class="pm-icon" src="${m.icon || m.image || ''}" alt="" onerror="this.style.display='none'" />
+                            <div class="pm-title">${m.question || m.title || m.slug || 'Unknown market'}</div>
+                        </div>
+                        <div class="pm-outcomes">${outcomeRows}</div>
+                        <div class="pm-meta">
+                            <span>$${Number(m.volumeNum ?? m.volume ?? 0).toFixed(0)} Vol.</span>
+                            <span>${m.category || 'General'}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        };
+
+        const fetchPolymarketTerminal = async () => {
+            try {
+                pmStatus.textContent = 'SYNCING';
+                const resp = await fetch(POLYMARKET_ENDPOINT, { cache: 'no-store' });
+                const text = await resp.text();
+                let data = { markets: [] };
+                try {
+                    data = JSON.parse(text);
+                } catch {
+                    data = { markets: [] };
+                }
+                const markets = Array.isArray(data) ? data : (data?.markets || []);
+                renderPolymarket(markets);
+                pmStatus.textContent = markets.length ? 'ONLINE' : 'STANDBY';
+            } catch {
+                renderPolymarket([]);
+                pmStatus.textContent = 'STANDBY';
+            }
+        };
+
         fetchMarkets();
         setInterval(fetchMarkets, UPDATE_INTERVAL);
+        fetchPolymarketTerminal();
+        setInterval(fetchPolymarketTerminal, 30000);
     </script>
 </body>
 </html>
