@@ -6,29 +6,11 @@
       "use": "@vercel/node"
     }
   ],
-  "routes": [
-    {
-      "src": "/api/polymarket",
-      "dest": "/api/polymarket.js"
-    },
-    {
-      "src": "/api/kalshi",
-      "dest": "/api/kalshi.js"
-    },
-    {
-      "src": "/api/predictions",
-      "dest": "/api/predictions.js"
-    },
-    {
-      "src": "/api/health",
-      "dest": "/api/health.js"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
-    }
-  ],
   "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "/api/:path*.js"
+    },
     {
       "source": "/:path*",
       "destination": "/index.html"
