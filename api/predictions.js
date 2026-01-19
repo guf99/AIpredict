@@ -15,13 +15,6 @@ export default async function handler(req, res) {
   }
 
   const SYMBOLS = ['BTC', 'ETH', 'BNB', 'XRP', 'SOL', 'ADA', 'DOGE', 'AVAX'];
-  const BINANCE_HOSTS = [
-    'https://api.binance.com',
-    'https://data.binance.com',
-    'https://api1.binance.com',
-    'https://api2.binance.com',
-    'https://api3.binance.com'
-  ];
   const COINGECKO_IDS = {
     BTC: 'bitcoin',
     ETH: 'ethereum',
@@ -32,45 +25,22 @@ export default async function handler(req, res) {
     DOGE: 'dogecoin',
     AVAX: 'avalanche-2'
   };
-  const PROVIDER = (process.env.PRICE_PROVIDER || 'binance').toLowerCase();
-
-  const fetchBinanceAll = async () => {
-    const symbols = SYMBOLS.map((s) => `${s}USDT`);
-    const query = encodeURIComponent(JSON.stringify(symbols));
-
-    for (const host of BINANCE_HOSTS) {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 4000);
-      try {
-        const url = `${host}/api/v3/ticker/24hr?symbols=${query}`;
-        const resp = await fetch(url, { method: 'GET', cache: 'no-store', signal: controller.signal });
-        if (!resp.ok) throw new Error(`Binance ${resp.status}`);
-        const data = await resp.json();
-        const map = {};
-        data.forEach((item) => {
-          const sym = item.symbol.replace('USDT', '');
-          map[sym] = {
-            price: Number(item.lastPrice),
-            change24h: Number(item.priceChangePercent),
-            rsi: 40 + Math.random() * 20,
-            source: host
-          };
-        });
-        clearTimeout(timeout);
-        return { map, source: 'binance' };
-      } catch {
-        clearTimeout(timeout);
-        continue;
-      }
-    }
-
-    throw new Error('All Binance hosts failed');
+  const PROVIDER = (process.env.PRICE_PROVIDER || '').toLowerCase();
+  const REQUEST_HEADERS = {
+    'User-Agent': 'Mozilla/5.0',
+    'Accept': 'application/json'
   };
+  const CRYPTOCOMPARE_KEY = process.env.CRYPTOCOMPARE_API_KEY;
+  const COINGECKO_KEY = process.env.COINGECKO_API_KEY;
 
   const fetchCryptoCompareAll = async () => {
     const fsyms = SYMBOLS.join(',');
     const url = `https://min-api.cryptocompare.com/data/pricemultifull?fsyms=${fsyms}&tsyms=USD`;
-    const resp = await fetch(url, { method: 'GET', cache: 'no-store' });
+    const headers = {
+      ...REQUEST_HEADERS,
+      ...(CRYPTOCOMPARE_KEY ? { authorization: `Apikey ${CRYPTOCOMPARE_KEY}` } : {})
+    };
+    const resp = await fetch(url, { method: 'GET', cache: 'no-store', headers });
     if (!resp.ok) throw new Error(`CryptoCompare ${resp.status}`);
     const data = await resp.json();
     const raw = data?.RAW || {};
@@ -91,7 +61,11 @@ export default async function handler(req, res) {
   const fetchCoingeckoAll = async () => {
     const ids = SYMBOLS.map((s) => COINGECKO_IDS[s]).join(',');
     const url = `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`;
-    const resp = await fetch(url, { method: 'GET', cache: 'no-store' });
+    const headers = {
+      ...REQUEST_HEADERS,
+      ...(COINGECKO_KEY ? { 'x-cg-pro-api-key': COINGECKO_KEY } : {})
+    };
+    const resp = await fetch(url, { method: 'GET', cache: 'no-store', headers });
     if (!resp.ok) throw new Error(`CoinGecko ${resp.status}`);
     const data = await resp.json();
     const map = {};
@@ -125,7 +99,7 @@ export default async function handler(req, res) {
       pair: `${symbol}/USDT`,
       currentPrice: Number(data.price.toFixed(2)),
       change24h: Number(data.change24h.toFixed(2)),
-      source: data.source || 'binance',
+      source: data.source || 'cryptocompare',
       direction,
       signal,
       confidence: Math.round(confidence),
@@ -150,19 +124,32 @@ export default async function handler(req, res) {
   try {
     const { symbol } = req.query || {};
     let marketMap = {};
-    let marketSource = 'fallback';
-    try {
-      const fetcher =
-        PROVIDER === 'cryptocompare' ? fetchCryptoCompareAll :
-        PROVIDER === 'coingecko' ? fetchCoingeckoAll :
-        fetchBinanceAll;
-      const result = await fetcher();
-      marketMap = result.map || {};
-      marketSource = result.source || PROVIDER;
-    } catch {
-      marketMap = {};
-      marketSource = 'unavailable';
-    }
+    let marketSource = 'unavailable';
+    const tryProviders = async (providers) => {
+      for (const provider of providers) {
+        try {
+          const result = await provider();
+          if (result?.map && Object.keys(result.map).length) {
+            return result;
+          }
+        } catch {
+          continue;
+        }
+      }
+      return { map: {}, source: 'unavailable' };
+    };
+
+    const allowedProviders = ['cryptocompare', 'coingecko'];
+    const requested = allowedProviders.includes(PROVIDER) ? PROVIDER : '';
+    const providersToTry = requested === 'cryptocompare'
+      ? [fetchCryptoCompareAll]
+      : requested === 'coingecko'
+        ? [fetchCoingeckoAll]
+        : [fetchCryptoCompareAll, fetchCoingeckoAll];
+
+    const result = await tryProviders(providersToTry);
+    marketMap = result.map || {};
+    marketSource = result.source || requested || 'cryptocompare';
 
     if (!Object.keys(marketMap).length) {
       return res.status(503).json({
