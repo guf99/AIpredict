@@ -26,6 +26,7 @@ const mockEndpoints = {
   }),
   '/api/predictions': async () => {
     const coins = ['BTC', 'ETH', 'BNB', 'XRP', 'SOL', 'ADA', 'DOGE', 'AVAX'];
+    const provider = (process.env.PRICE_PROVIDER || 'binance').toLowerCase();
 
     const fetchJsonNative = (apiUrl) => new Promise((resolve, reject) => {
       https.get(apiUrl, (resp) => {
@@ -68,44 +69,6 @@ const mockEndpoints = {
           price: Number(item.lastPrice),
           change24h: Number(item.priceChangePercent),
           source: 'binance'
-        };
-      });
-      return map;
-    };
-
-    const fetchBybitAll = async () => {
-      const data = await fetchJson('https://api.bybit.com/v5/market/tickers?category=spot');
-      const list = data?.result?.list || [];
-      const map = {};
-      list.forEach((item) => {
-        const sym = (item.symbol || '').replace('USDT', '');
-        if (!coins.includes(sym)) return;
-        const pct = Number(item.price24hPcnt || 0) * 100;
-        map[sym] = {
-          price: Number(item.lastPrice),
-          change24h: Number(pct),
-          source: 'bybit'
-        };
-      });
-      return map;
-    };
-
-    const fetchOkxAll = async () => {
-      const data = await fetchJson('https://www.okx.com/api/v5/market/tickers?instType=SPOT');
-      const list = data?.data || [];
-      const map = {};
-      list.forEach((item) => {
-        const instId = item.instId || '';
-        if (!instId.endsWith('-USDT')) return;
-        const sym = instId.replace('-USDT', '');
-        if (!coins.includes(sym)) return;
-        const last = Number(item.last);
-        const open = Number(item.open24h || last);
-        const pct = open ? ((last - open) / open) * 100 : 0;
-        map[sym] = {
-          price: last,
-          change24h: Number(pct),
-          source: 'okx'
         };
       });
       return map;
@@ -156,25 +119,15 @@ const mockEndpoints = {
 
     let marketMap = {};
     try {
-      marketMap = await fetchCoingeckoAll();
-    } catch {
-      try {
+      if (provider === 'cryptocompare') {
         marketMap = await fetchCryptoCompareAll();
-      } catch {
-        try {
-          marketMap = await fetchBinanceAll();
-        } catch {
-          try {
-            marketMap = await fetchBybitAll();
-          } catch {
-            try {
-              marketMap = await fetchOkxAll();
-            } catch {
-              marketMap = {};
-            }
-          }
-        }
+      } else if (provider === 'coingecko') {
+        marketMap = await fetchCoingeckoAll();
+      } else {
+        marketMap = await fetchBinanceAll();
       }
+    } catch {
+      marketMap = {};
     }
 
     if (!Object.keys(marketMap).length) {
