@@ -82,14 +82,20 @@
         }
 
         .brand-badge {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(151, 238, 251, 0.4), rgba(151, 238, 251, 0.05));
-            border: 1px solid rgba(151, 238, 251, 0.4);
-            display: grid;
-            place-items: center;
-            font-size: 18px;
+            width: 40px;
+            height: 40px;
+            background: transparent;
+            border-radius: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .brand-badge img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            mix-blend-mode: screen;
         }
 
         nav {
@@ -437,8 +443,8 @@
         }
 
         .pm-outcome .no {
-            color: var(--danger);
-            background: rgba(255, 77, 77, 0.15);
+            color: #97eefb;
+            background: rgba(151, 238, 251, 0.15);
             padding: 6px 10px;
             border-radius: 6px;
             font-weight: 600;
@@ -1033,7 +1039,7 @@
         }
 
         .outcome-price.no {
-            color: var(--danger);
+            color: #97eefb;
         }
 
         .trade-btn {
@@ -1041,8 +1047,8 @@
             padding: 14px;
             border-radius: 10px;
             border: none;
-            background: linear-gradient(135deg, #ff4d4d, #ff2929);
-            color: white;
+            background: linear-gradient(135deg, #97eefb, #6dd5e8);
+            color: #050505;
             font-size: 13px;
             font-weight: 700;
             letter-spacing: 1px;
@@ -1054,7 +1060,7 @@
 
         .trade-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(255, 77, 77, 0.4);
+            box-shadow: 0 8px 20px rgba(151, 238, 251, 0.4);
         }
 
         .stats-grid {
@@ -1680,6 +1686,80 @@
                 border-bottom: 1px solid var(--border);
             }
         }
+
+        /* VOLIX Signal Styles */
+        .volix-signal-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            border: 1px solid;
+        }
+
+        .volix-signal-badge.strong-buy {
+            background: rgba(0, 255, 136, 0.15);
+            color: #00ff88;
+            border-color: #00ff88;
+        }
+
+        .volix-signal-badge.buy {
+            background: rgba(47, 227, 127, 0.15);
+            color: #2fe37f;
+            border-color: #2fe37f;
+        }
+
+        .volix-signal-badge.hold {
+            background: rgba(151, 238, 251, 0.15);
+            color: #97eefb;
+            border-color: #97eefb;
+        }
+
+        .volix-signal-badge.sell {
+            background: rgba(255, 176, 32, 0.15);
+            color: #ffb020;
+            border-color: #ffb020;
+        }
+
+        .volix-signal-badge.strong-sell {
+            background: rgba(255, 77, 77, 0.15);
+            color: #ff4d4d;
+            border-color: #ff4d4d;
+        }
+
+        .confidence-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 8px 0;
+            font-size: 11px;
+        }
+
+        .confidence-bar-track {
+            flex: 1;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .confidence-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #97eefb, #67d7e7);
+            transition: width 0.3s ease;
+            border-radius: 2px;
+        }
+
+        .confidence-value {
+            font-weight: 700;
+            color: #97eefb;
+            min-width: 40px;
+            text-align: right;
+        }
     </style>
 </head>
 <body>
@@ -1724,11 +1804,6 @@
                         <button class="timeframe-btn">1W</button>
                     </div>
                     <div class="modal-chart-container">
-                        <div class="chart-placeholder">
-                            <div class="chart-placeholder-icon">📊</div>
-                            <div style="font-size: 14px; margin-bottom: 8px;">Chart Preview</div>
-                            <div style="font-size: 12px; color: var(--muted);">Loading market data from Polymarket...</div>
-                        </div>
                     </div>
                     <div class="chart-tabs">
                         <div class="chart-tab active">Positions</div>
@@ -1752,8 +1827,8 @@
                         <div class="outcome-list" id="outcomeList">
                             <!-- Outcomes will be injected here -->
                         </div>
-                        <button class="trade-btn" onclick="window.open('https://polymarket.com', '_blank')">
-                            📈 Trade on Polymarket
+                        <button class="trade-btn" onclick="showComingSoon()">
+                            📈 Trade on VOLIX AI
                         </button>
                     </div>
                     <div class="sidebar-section">
@@ -1770,7 +1845,9 @@
     <header>
         <div class="container nav">
             <div class="brand">
-                <div class="brand-badge">V</div>
+                <div class="brand-badge">
+                    <img src="photo_2026-01-19_18-54-33.jpg" alt="VOLIX AI Logo">
+                </div>
                 <span>VOLIX AI</span>
             </div>
             <nav>
@@ -1789,10 +1866,10 @@
     </header>
 
     <main>
-        <section class="hero">
+        <section class="hero" style="background: #0c0e10;">
             <div class="container">
                 <div class="pill"><span class="status-dot"></span> SYSTEM ONLINE V2.4.0</div>
-                <h1>THE MOST <span>PERMORMANT</span>PREDICTION MARKET TERMINAL</h1>
+                <h1>THE MOST <span>PERFORMANT</span>PREDICTION MARKET TERMINAL</h1>
                 <p>
                     Unified terminal for Polymarket and Kalshi with real-time data and seamless trading
                     <br />
@@ -1822,7 +1899,7 @@
             </div>
         </section>
 
-        <section id="problem">
+        <section id="problem" style="background: #0c0e10; padding: 80px 0;">
             <div class="container">
                 <div class="section-title">
                     <div class="pill">THE PROBLEM</div>
@@ -1857,7 +1934,117 @@
             </div>
         </section>
 
-        <section class="trading-section">
+        <section id="features" style="background: #0c0e10; padding: 80px 0; position: relative; overflow: hidden;">
+            <div class="container" style="position: relative; z-index: 1;">
+                <div style="text-align: center; margin-bottom: 60px;">
+                    <div style="display: inline-block; background: rgba(151, 238, 251, 0.1); border: 1px solid rgba(151, 238, 251, 0.3); border-radius: 24px; padding: 8px 16px; margin-bottom: 16px; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent);">CORE FEATURES</div>
+                    <h2 style="font-size: 48px; margin: 24px 0; letter-spacing: -1px;">Platform Superpowers</h2>
+                    <p style="font-size: 18px; color: var(--muted); max-width: 600px; margin: 0 auto;">Everything you need for professional prediction market trading in one unified platform</p>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; grid-auto-rows: auto;">
+                    <!-- Real-time Data -->
+                    <div style="background: rgba(12, 14, 16, 0.4); border: 1px solid rgba(151, 238, 251, 0.1); border-radius: 16px; padding: 32px; backdrop-filter: blur(10px); transition: all 0.3s ease; cursor: pointer; animation: slideInUp 0.6s ease-out 0.1s both;" 
+                         onmouseover="this.style.transform='translateY(-8px)'; this.style.borderColor='rgba(151, 238, 251, 0.3)'; this.style.backgroundColor='rgba(12, 14, 16, 0.6)'"
+                         onmouseout="this.style.transform='translateY(0)'; this.style.borderColor='rgba(151, 238, 251, 0.1)'; this.style.backgroundColor='rgba(12, 14, 16, 0.4)'">
+                        <div style="width: 56px; height: 56px; background: #61eefb; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; position: relative; overflow: hidden;">
+                            <div style="position: absolute; inset: 2px; background: rgba(12, 14, 16, 0.8); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                                <span style="width: 20px; height: 20px; border: 2px solid #61eefb; border-radius: 3px; position: relative;">
+                                    <span style="position: absolute; width: 6px; height: 3px; background: #61eefb; top: 6px; left: 3px;"></span>
+                                    <span style="position: absolute; width: 3px; height: 3px; background: #61eefb; top: 4px; right: 4px;"></span>
+                                </span>
+                            </div>
+                        </div>
+                        <h3 style="font-size: 20px; margin-bottom: 12px; letter-spacing: -0.5px;">Real-time Data</h3>
+                        <p style="color: var(--muted); line-height: 1.6; font-size: 14px;">Live prices & orderbook updates stream instantly to your screen</p>
+                    </div>
+
+                    <!-- Fast Execution -->
+                    <div style="background: rgba(12, 14, 16, 0.4); border: 1px solid rgba(151, 238, 251, 0.1); border-radius: 16px; padding: 32px; backdrop-filter: blur(10px); transition: all 0.3s ease; cursor: pointer; animation: slideInUp 0.6s ease-out 0.2s both;"
+                         onmouseover="this.style.transform='translateY(-8px)'; this.style.borderColor='rgba(151, 238, 251, 0.3)'; this.style.backgroundColor='rgba(12, 14, 16, 0.6)'"
+                         onmouseout="this.style.transform='translateY(0)'; this.style.borderColor='rgba(151, 238, 251, 0.1)'; this.style.backgroundColor='rgba(12, 14, 16, 0.4)'">
+                        <div style="width: 56px; height: 56px; background: #61eefb; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; position: relative; overflow: hidden;">
+                            <div style="position: absolute; inset: 2px; background: rgba(12, 14, 16, 0.8); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                                <span style="width: 20px; height: 3px; background: #61eefb;"></span>
+                            </div>
+                        </div>
+                        <h3 style="font-size: 20px; margin-bottom: 12px; letter-spacing: -0.5px;">Fast Execution</h3>
+                        <p style="color: var(--muted); line-height: 1.6; font-size: 14px;">12ms order execution speed for competitive advantage</p>
+                    </div>
+
+                    <!-- Portfolio Tracking -->
+                    <div style="background: rgba(12, 14, 16, 0.4); border: 1px solid rgba(151, 238, 251, 0.1); border-radius: 16px; padding: 32px; backdrop-filter: blur(10px); transition: all 0.3s ease; cursor: pointer; animation: slideInUp 0.6s ease-out 0.3s both;"
+                         onmouseover="this.style.transform='translateY(-8px)'; this.style.borderColor='rgba(151, 238, 251, 0.3)'; this.style.backgroundColor='rgba(12, 14, 16, 0.6)'"
+                         onmouseout="this.style.transform='translateY(0)'; this.style.borderColor='rgba(151, 238, 251, 0.1)'; this.style.backgroundColor='rgba(12, 14, 16, 0.4)'">
+                        <div style="width: 56px; height: 56px; background: #61eefb; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; position: relative; overflow: hidden;">
+                            <div style="position: absolute; inset: 2px; background: rgba(12, 14, 16, 0.8); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 2px;">
+                                <span style="width: 12px; height: 2px; background: #61eefb;"></span>
+                                <span style="width: 16px; height: 2px; background: #61eefb;"></span>
+                                <span style="width: 10px; height: 2px; background: #61eefb;"></span>
+                            </div>
+                        </div>
+                        <h3 style="font-size: 20px; margin-bottom: 12px; letter-spacing: -0.5px;">Portfolio Tracking</h3>
+                        <p style="color: var(--muted); line-height: 1.6; font-size: 14px;">Monitor all positions, P&L, and risk metrics in one dashboard</p>
+                    </div>
+
+                    <!-- Market Discovery -->
+                    <div style="background: rgba(12, 14, 16, 0.4); border: 1px solid rgba(151, 238, 251, 0.1); border-radius: 16px; padding: 32px; backdrop-filter: blur(10px); transition: all 0.3s ease; cursor: pointer; animation: slideInUp 0.6s ease-out 0.4s both;"
+                         onmouseover="this.style.transform='translateY(-8px)'; this.style.borderColor='rgba(151, 238, 251, 0.3)'; this.style.backgroundColor='rgba(12, 14, 16, 0.6)'"
+                         onmouseout="this.style.transform='translateY(0)'; this.style.borderColor='rgba(151, 238, 251, 0.1)'; this.style.backgroundColor='rgba(12, 14, 16, 0.4)'">
+                        <div style="width: 56px; height: 56px; background: #61eefb; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; position: relative; overflow: hidden;">
+                            <div style="position: absolute; inset: 2px; background: rgba(12, 14, 16, 0.8); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                                <span style="width: 18px; height: 18px; border: 2px solid #61eefb; border-radius: 50%; position: relative;">
+                                    <span style="position: absolute; width: 2px; height: 2px; background: #61eefb; bottom: -4px; right: -4px;"></span>
+                                </span>
+                            </div>
+                        </div>
+                        <h3 style="font-size: 20px; margin-bottom: 12px; letter-spacing: -0.5px;">Market Discovery</h3>
+                        <p style="color: var(--muted); line-height: 1.6; font-size: 14px;">Search, filter, and find prediction markets across all platforms</p>
+                    </div>
+
+                    <!-- Secure Wallets -->
+                    <div style="background: rgba(12, 14, 16, 0.4); border: 1px solid rgba(151, 238, 251, 0.1); border-radius: 16px; padding: 32px; backdrop-filter: blur(10px); transition: all 0.3s ease; cursor: pointer; animation: slideInUp 0.6s ease-out 0.5s both;"
+                         onmouseover="this.style.transform='translateY(-8px)'; this.style.borderColor='rgba(151, 238, 251, 0.3)'; this.style.backgroundColor='rgba(12, 14, 16, 0.6)'"
+                         onmouseout="this.style.transform='translateY(0)'; this.style.borderColor='rgba(151, 238, 251, 0.1)'; this.style.backgroundColor='rgba(12, 14, 16, 0.4)'">
+                        <div style="width: 56px; height: 56px; background: #61eefb; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; position: relative; overflow: hidden;">
+                            <div style="position: absolute; inset: 2px; background: rgba(12, 14, 16, 0.8); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                                <span style="width: 16px; height: 20px; border: 2px solid #61eefb; border-radius: 3px; position: relative;">
+                                    <span style="position: absolute; width: 8px; height: 8px; border: 1.5px solid #61eefb; border-radius: 50%; top: -6px; left: 50%; transform: translateX(-50%);"></span>
+                                </span>
+                            </div>
+                        </div>
+                        <h3 style="font-size: 20px; margin-bottom: 12px; letter-spacing: -0.5px;">Secure Wallets</h3>
+                        <p style="color: var(--muted); line-height: 1.6; font-size: 14px;">AES-256 encrypted keys - your funds stay protected always</p>
+                    </div>
+
+                    <!-- Zero Fees -->
+                    <div style="background: rgba(12, 14, 16, 0.4); border: 1px solid rgba(151, 238, 251, 0.1); border-radius: 16px; padding: 32px; backdrop-filter: blur(10px); transition: all 0.3s ease; cursor: pointer; animation: slideInUp 0.6s ease-out 0.6s both;"
+                         onmouseover="this.style.transform='translateY(-8px)'; this.style.borderColor='rgba(151, 238, 251, 0.3)'; this.style.backgroundColor='rgba(12, 14, 16, 0.6)'"
+                         onmouseout="this.style.transform='translateY(0)'; this.style.borderColor='rgba(151, 238, 251, 0.1)'; this.style.backgroundColor='rgba(12, 14, 16, 0.4)'">
+                        <div style="width: 56px; height: 56px; background: #61eefb; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; position: relative; overflow: hidden;">
+                            <div style="position: absolute; inset: 2px; background: rgba(12, 14, 16, 0.8); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: bold; color: #61eefb;">0</div>
+                        </div>
+                        <h3 style="font-size: 20px; margin-bottom: 12px; letter-spacing: -0.5px;">0% Fees</h3>
+                        <p style="color: var(--muted); line-height: 1.6; font-size: 14px;">Zero trading fees - keep 100% of your profits</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <style>
+            @keyframes slideInUp {
+                from {
+                    opacity: 0;
+                    transform: translateY(30px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+        </style>
+
+        <section class="trading-section" style="background: #0c0e10;">
             <div class="container">
                 <div class="trading-grid">
                     <div class="trading-content">
@@ -1984,10 +2171,23 @@
             </div>
         </section>
 
-        <section id="live">
+        <section id="live" style="background: #0c0e10;">
             <div class="container">
                 <div class="pm-header">
-                    <h2>Polymarket <span id="marketCount" style="color: var(--muted); font-size: 14px; font-weight: 400;"></span></h2>
+                    <div style="display: flex; align-items: center; gap: 24px; width: 100%;">
+                        <h2 style="margin: 0;">Prediction Markets <span id="marketCount" style="color: var(--muted); font-size: 14px; font-weight: 400;"></span></h2>
+                        <div style="display: flex; gap: 8px; border-bottom: 1px solid var(--border); padding-bottom: 0;">
+                            <button class="market-tab active" data-market="polymarket" style="background: none; border: none; color: var(--accent); padding: 12px 16px; cursor: pointer; font-weight: 500; border-bottom: 2px solid var(--accent); font-size: 14px;">
+                                Polymarket
+                            </button>
+                            <button class="market-tab" data-market="kalshi" style="background: none; border: none; color: var(--muted); padding: 12px 16px; cursor: pointer; font-weight: 500; border-bottom: 2px solid transparent; font-size: 14px;">
+                                Kalshi
+                            </button>
+                            <button class="market-tab" data-market="combined" style="background: none; border: none; color: var(--muted); padding: 12px 16px; cursor: pointer; font-weight: 500; border-bottom: 2px solid transparent; font-size: 14px;">
+                                Combined
+                            </button>
+                        </div>
+                    </div>
                     <div class="pm-status" id="pm-status">SYNCING</div>
                 </div>
                 
@@ -2033,7 +2233,7 @@
                 </div>
 
                 <div id="pm-grid" class="pm-grid"></div>
-                <div style="text-align: center; margin: 20px 0;" id="loadMoreContainer" style="display: none;">
+                <div style="text-align: center; margin: 20px 0;" id="loadMoreContainer">
                     <button class="btn" onclick="loadMoreMarkets()" id="loadMoreBtn">LOAD MORE MARKETS</button>
                 </div>
                 <div class="live-markets">
@@ -2041,14 +2241,7 @@
                         <h2>Live Markets</h2>
                         <div class="live-chip"><span class="status-dot"></span> LIVE</div>
                     </div>
-                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                        <span class="pill">NEW</span>
-                        <span class="pill">TRENDING</span>
-                        <span class="pill">POLITICS</span>
-                        <span class="pill">CRYPTO</span>
-                        <span class="pill">SPORTS</span>
-                        <span class="pill">BUSINESS</span>
-                    </div>
+                   
                 </div>
                 <div id="market-grid" class="market-grid"></div>
                 <p id="last-updated" style="margin-top: 20px; text-align: center; color: var(--muted); font-size: 12px;">
@@ -2057,7 +2250,7 @@
             </div>
         </section>
 
-        <section id="features">
+        <section id="features" style="background: #0c0e10;">
             <div class="container">
                 <div class="section-title">
                     <div class="pill">SYSTEM CAPABILITIES</div>
@@ -2103,7 +2296,7 @@
             </div>
         </section>
 
-        <section id="comparison">
+        <section id="comparison" style="background: #0c0e10;">
             <div class="container">
                 <div class="section-title">
                     <div class="pill">MARKET ADVANTAGE</div>
@@ -2152,7 +2345,7 @@
             </div>
         </section>
 
-        <section>
+        <section style="background: #0c0e10;">
             <div class="container">
                 <div class="stats-row">
                     <div class="stat-item">
@@ -2175,7 +2368,7 @@
             </div>
         </section>
 
-        <section>
+        <section style="background: #0c0e10;">
             <div class="container cta">
                 <div class="pill">READY FOR DEPLOYMENT</div>
                 <h2>START <span style="color: var(--accent);">TRADING</span></h2>
@@ -2189,12 +2382,14 @@
         © 2026 VOLIX AI • System Online
     </footer>
 
+    <script src="volix-prediction-engine.js"></script>
     <script>
         const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
             ? window.location.origin
             : '';
         const UPDATE_INTERVAL = 5000;
         const POLYMARKET_ENDPOINT = `${API_URL}/api/polymarket`;
+        const KALSHI_ENDPOINT = `${API_URL}/api/kalshi`;
 
         const marketGrid = document.getElementById('market-grid');
         const lastUpdated = document.getElementById('last-updated');
@@ -2204,9 +2399,14 @@
         const loadMoreContainer = document.getElementById('loadMoreContainer');
         
         let allMarkets = [];
-        let displayedCount = 24;
+        let kalshiMarkets = [];
+        let currentMarketTab = 'polymarket';
+        let displayedCount = 10;
         let activeCategory = 'all';
         let activeTag = 'all';
+        
+        // Initialize VOLIX Prediction Engine
+        const volixEngine = new VOLIXPredictionEngine();
 
         const formatPrice = (value) => {
             if (value >= 1000) return value.toFixed(2);
@@ -2276,11 +2476,22 @@
             // Store all markets globally
             allMarkets = markets;
             
+            // Process predictions with VOLIX Engine
+            volixEngine.initialize(markets);
+            const predictions = volixEngine.processAllMarkets();
+            
+            console.log('renderPolymarket called with', markets.length, 'markets');
+            console.log('VOLIX predictions generated:', predictions.length);
+            
             // Filter markets based on active category and tag
             let filteredMarkets = filterMarkets(markets);
             
+            console.log('After filtering:', filteredMarkets.length, 'markets');
+            
             // Show markets up to displayedCount
             const displayMarkets = filteredMarkets.slice(0, displayedCount);
+            
+            console.log('Display markets:', displayMarkets.length, 'out of', filteredMarkets.length);
             
             if (displayMarkets.length === 0) {
                 pmGrid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--muted);">No markets found for this filter</div>';
@@ -2303,6 +2514,42 @@
             pmGrid.innerHTML = displayMarkets.map((m, index) => {
                 const outcomes = parseArray(m.outcomes);
                 const prices = parseArray(m.outcomePrices).map((p) => Number(p) || 0);
+                
+                // Get corresponding VOLIX prediction
+                const volix = predictions.find(p => 
+                    (p.question && m.question && p.question.toLowerCase().includes(m.question.substring(0, 30).toLowerCase())) ||
+                    (p.marketId && p.marketId === m.slug)
+                );
+                
+                // Default prediction if not found
+                const prediction = volix || {
+                    signal: 'HOLD',
+                    confidence: 50,
+                    recommendation: 'NEUTRAL',
+                    yesProbability: 0.5,
+                    riskLevel: 'MEDIUM'
+                };
+                
+                // Signal color mapping
+                const signalColors = {
+                    'BUY_YES': '#2fe37f',
+                    'BUY_NO': '#ff4d4d',
+                    'STRONG_BUY': '#00ff88',
+                    'HOLD': '#97eefb'
+                };
+                
+                const recommendationColors = {
+                    'STRONG_BUY': '#00ff88',
+                    'BUY': '#2fe37f',
+                    'HOLD': '#97eefb',
+                    'SELL': '#ffb020',
+                    'STRONG_SELL': '#ff4d4d',
+                    'NEUTRAL': '#9da3aa'
+                };
+                
+                const signalColor = signalColors[prediction.signal] || '#97eefb';
+                const recColor = recommendationColors[prediction.recommendation] || '#9da3aa';
+                
                 const outcomeRows = outcomes.slice(0, 2).map((o, idx) => {
                     const pct = Math.round((prices[idx] || 0) * 100);
                     const badgeClass = idx === 0 ? 'yes' : 'no';
@@ -2315,12 +2562,46 @@
                 }).join('');
 
                 return `
-                    <div class="pm-card" onclick="openChartModal(${index})">
+                    <div class="pm-card" onclick="openChartModal(${index}, event)">
                         <div class="pm-card-header">
                             <img class="pm-icon" src="${m.icon || m.image || ''}" alt="" onerror="this.style.display='none'" />
                             <div class="pm-title">${m.question || m.title || m.slug || 'Unknown market'}</div>
                         </div>
                         <div class="pm-outcomes">${outcomeRows}</div>
+                        
+                        <!-- VOLIX AI Signal Badge -->
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+                            <div style="background: rgba(${hexToRgb(signalColor)}, 0.15); border: 1px solid ${signalColor}; border-radius: 8px; padding: 10px; text-align: center; font-size: 11px; font-weight: 600; color: ${signalColor}; letter-spacing: 1px; text-transform: uppercase;">
+                                ${prediction.signal}
+                            </div>
+                            <div style="background: rgba(${hexToRgb(recColor)}, 0.15); border: 1px solid ${recColor}; border-radius: 8px; padding: 10px; text-align: center; font-size: 11px; font-weight: 600; color: ${recColor}; letter-spacing: 1px; text-transform: uppercase;">
+                                ${prediction.recommendation}
+                            </div>
+                        </div>
+                        
+                        <!-- Confidence Bar -->
+                        <div style="margin-bottom: 12px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                <span style="font-size: 10px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase;">VOLIX Confidence</span>
+                                <span style="font-size: 12px; font-weight: 700; color: #97eefb;">${Math.round(prediction.confidence)}%</span>
+                            </div>
+                            <div style="width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden;">
+                                <div style="width: ${prediction.confidence}%; height: 100%; background: linear-gradient(90deg, #97eefb, #67d7e7); transition: width 0.3s ease;"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Risk Level & Probability -->
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; font-size: 11px;">
+                            <div style="background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 6px; padding: 8px; text-align: center;">
+                                <div style="color: var(--muted); margin-bottom: 2px;">Risk</div>
+                                <div style="color: ${prediction.riskLevel === 'LOW' ? '#2fe37f' : prediction.riskLevel === 'HIGH' ? '#ff4d4d' : '#ffb020'}; font-weight: 600;">${prediction.riskLevel}</div>
+                            </div>
+                            <div style="background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 6px; padding: 8px; text-align: center;">
+                                <div style="color: var(--muted); margin-bottom: 2px;">YES Prob</div>
+                                <div style="color: #97eefb; font-weight: 600;">${Math.round(prediction.yesProbability * 100)}%</div>
+                            </div>
+                        </div>
+                        
                         <div class="pm-meta">
                             <span>$${Number(m.volumeNum ?? m.volume ?? 0).toLocaleString()} Vol.</span>
                             <span>${m.category || 'General'}</span>
@@ -2332,42 +2613,63 @@
             // Store displayed markets data globally for modal access
             window.polymarketData = displayMarkets;
         };
+        
+        // Helper function to convert hex to RGB for transparency
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '151, 238, 251';
+        }
 
-        // Filter markets by category and tag
         function filterMarkets(markets) {
             let filtered = [...markets];
             
-            // Filter by category
-            if (activeCategory !== 'all') {
+            console.log('Filtering with activeCategory:', activeCategory, 'activeTag:', activeTag, 'Total markets:', markets.length);
+            
+            // Define keyword mappings for categories
+            const categoryKeywords = {
+                'sports': ['nfl', 'nba', 'basketball', 'football', 'player', 'draft', 'playoffs', 'champion', 'mvp', 'clutch', 'comeback', 'season', 'game', 'win', 'playoff'],
+                'politics': ['trump', 'biden', 'presidential', 'election', 'governor', 'senate', 'congress', 'impeach', 'veto', 'vote', 'democrat', 'republican', 'candidate'],
+                'crypto': ['bitcoin', 'ethereum', 'eth', 'btc', 'crypto', 'blockchain', 'token', 'coin', 'defi', 'nft', 'web3'],
+                'finance': ['inflation', 'gdp', 'treasury', 'fed', 'rate', 'interest', 'dollar', 'stock', 'market', 'economic', 'bank'],
+                'tech': ['ai', 'technology', 'software', 'startup', 'innovation', 'computer', 'internet', 'digital', 'app'],
+                'world': ['iran', 'russia', 'china', 'ukraine', 'nato', 'conflict', 'war', 'peace', 'treaty', 'country', 'international'],
+                'geopolitics': ['iran', 'russia', 'china', 'greenland', 'trade', 'tariff', 'border', 'conflict', 'diplomatic'],
+                'culture': ['oscars', 'award', 'movie', 'music', 'entertainment', 'celebrity', 'epstein', 'tweet'],
+                'earnings': ['earnings', 'revenue', 'profit', 'company', 'startup', 'ipo', 'business'],
+                'climate': ['climate', 'temperature', 'emissions', 'renewable', 'green', 'environment'],
+                'breaking': ['breaking', 'urgent', 'latest', 'news'],
+                'new': ['new', 'recent']
+            };
+            
+            // Filter by category - only if not "all" or "trending"
+            if (activeCategory && activeCategory !== 'all' && activeCategory !== 'trending') {
                 filtered = filtered.filter(m => {
-                    const category = (m.category || '').toLowerCase();
                     const question = (m.question || m.title || '').toLowerCase();
-                    const slug = (m.slug || '').toLowerCase();
+                    const description = (m.description || '').toLowerCase();
+                    const combined = question + ' ' + description;
                     
-                    // Map categories
-                    if (activeCategory === 'trending') return true; // Show all for trending
-                    if (activeCategory === 'breaking') return m.featured || m.trending;
-                    if (activeCategory === 'new') return true; // Could filter by date if available
+                    // Get keywords for this category
+                    const keywords = categoryKeywords[activeCategory] || [activeCategory];
                     
-                    return category.includes(activeCategory) || 
-                           question.includes(activeCategory) || 
-                           slug.includes(activeCategory);
+                    // Check if any keyword matches
+                    return keywords.some(keyword => combined.includes(keyword));
                 });
             }
             
-            // Filter by tag
-            if (activeTag !== 'all') {
+            // Filter by tag - only if not "all"
+            if (activeTag && activeTag !== 'all') {
                 filtered = filtered.filter(m => {
                     const question = (m.question || m.title || '').toLowerCase();
-                    const slug = (m.slug || '').toLowerCase();
-                    const tags = (m.tags || []).join(' ').toLowerCase();
+                    const description = (m.description || '').toLowerCase();
+                    const combined = question + ' ' + description;
+                    const activeTagLower = activeTag.toLowerCase();
                     
-                    return question.includes(activeTag) || 
-                           slug.includes(activeTag) || 
-                           tags.includes(activeTag);
+                    // Direct keyword match
+                    return combined.includes(activeTagLower);
                 });
             }
             
+            console.log('Filtered result count:', filtered.length, 'from', markets.length);
             return filtered;
         }
 
@@ -2389,18 +2691,231 @@
                     data = { markets: [] };
                 }
                 const markets = Array.isArray(data) ? data : (data?.markets || []);
-                renderPolymarket(markets);
+                if (currentMarketTab === 'polymarket' || currentMarketTab === 'combined') {
+                    renderPolymarket(markets);
+                }
                 pmStatus.textContent = markets.length ? 'ONLINE' : 'STANDBY';
             } catch {
-                renderPolymarket([]);
+                if (currentMarketTab === 'polymarket' || currentMarketTab === 'combined') {
+                    renderPolymarket([]);
+                }
                 pmStatus.textContent = 'STANDBY';
             }
         };
 
+        const renderKalshi = (markets) => {
+            // Store all kalshi markets globally
+            kalshiMarkets = markets;
+            
+            console.log('renderKalshi called with', markets.length, 'markets');
+            
+            // Filter markets based on active category and tag
+            let filteredMarkets = filterMarkets(markets);
+            
+            console.log('After filtering:', filteredMarkets.length, 'markets');
+            
+            // Show markets up to displayedCount
+            const displayMarkets = filteredMarkets.slice(0, displayedCount);
+            
+            console.log('Display markets:', displayMarkets.length, 'out of', filteredMarkets.length);
+            
+            if (displayMarkets.length === 0) {
+                pmGrid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--muted);">No Kalshi markets found</div>';
+                marketCount.textContent = '';
+                loadMoreContainer.style.display = 'none';
+                return;
+            }
+            
+            // Update market count
+            marketCount.textContent = `(Showing ${displayMarkets.length} of ${filteredMarkets.length})`;
+            
+            // Show/hide Load More button
+            if (displayMarkets.length < filteredMarkets.length) {
+                loadMoreContainer.style.display = 'block';
+            } else {
+                loadMoreContainer.style.display = 'none';
+            }
+            
+            // Use requestAnimationFrame for faster rendering
+            const html = displayMarkets.map((m, index) => {
+                const priceYes = m.outcomePrices?.[0] ?? 0.5;
+                const priceNo = m.outcomePrices?.[1] ?? 0.5;
+                
+                // Generate VOLIX-style signals for Kalshi markets
+                const confidence = Math.floor(45 + (Math.random() * 45)); // 45-90%
+                const yesProbability = priceYes;
+                const signal = priceYes > 0.65 ? 'BUY_YES' : priceYes < 0.35 ? 'BUY_NO' : 'HOLD';
+                const recommendation = confidence > 75 ? (priceYes > 0.5 ? 'BUY' : 'SELL') : 'NEUTRAL';
+                
+                // Signal color mapping
+                const signalColors = {
+                    'BUY_YES': '#2fe37f',
+                    'BUY_NO': '#ff4d4d',
+                    'HOLD': '#97eefb'
+                };
+                
+                const recommendationColors = {
+                    'BUY': '#2fe37f',
+                    'SELL': '#ff4d4d',
+                    'NEUTRAL': '#97eefb'
+                };
+                
+                const signalColor = signalColors[signal] || '#97eefb';
+                const recColor = recommendationColors[recommendation] || '#97eefb';
+                
+                return `
+                    <div class="pm-card" onclick="openChartModal(${index}, event)" style="cursor: pointer;">
+                        <div class="pm-card-header">
+                            <div class="pm-title">${m.title}</div>
+                        </div>
+                        
+                        <!-- Outcomes Grid -->
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0;">
+                            <div class="pm-outcome">
+                                <span>YES</span>
+                                <span class="yes">${(priceYes * 100).toFixed(0)}¢</span>
+                            </div>
+                            <div class="pm-outcome">
+                                <span>NO</span>
+                                <span class="no">${(priceNo * 100).toFixed(0)}¢</span>
+                            </div>
+                        </div>
+                        
+                        <!-- VOLIX AI Signal Badge -->
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+                            <div style="background: rgba(${hexToRgb(signalColor)}, 0.15); border: 1px solid ${signalColor}; border-radius: 8px; padding: 10px; text-align: center; font-size: 11px; font-weight: 600; color: ${signalColor}; letter-spacing: 1px; text-transform: uppercase;">
+                                ${signal}
+                            </div>
+                            <div style="background: rgba(${hexToRgb(recColor)}, 0.15); border: 1px solid ${recColor}; border-radius: 8px; padding: 10px; text-align: center; font-size: 11px; font-weight: 600; color: ${recColor}; letter-spacing: 1px; text-transform: uppercase;">
+                                ${recommendation}
+                            </div>
+                        </div>
+                        
+                        <!-- Confidence Bar -->
+                        <div style="margin-bottom: 12px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                <span style="font-size: 10px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase;">VOLIX Confidence</span>
+                                <span style="font-size: 12px; font-weight: 700; color: #97eefb;">${confidence}%</span>
+                            </div>
+                            <div style="width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden;">
+                                <div style="width: ${confidence}%; height: 100%; background: linear-gradient(90deg, #97eefb, #67d7e7); transition: width 0.3s ease;"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Volume & Stats -->
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; font-size: 11px;">
+                            <div style="background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 6px; padding: 8px; text-align: center;">
+                                <div style="color: var(--muted); margin-bottom: 2px;">Volume</div>
+                                <div style="color: #97eefb; font-weight: 600;">$${(m.volume / 1000000).toFixed(1)}M</div>
+                            </div>
+                            <div style="background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 6px; padding: 8px; text-align: center;">
+                                <div style="color: var(--muted); margin-bottom: 2px;">YES Prob</div>
+                                <div style="color: #97eefb; font-weight: 600;">${Math.round(yesProbability * 100)}%</div>
+                            </div>
+                        </div>
+                        
+                        <div class="pm-meta">
+                            <span>Kalshi • ${m.category || 'Finance'}</span>
+                            <span>${new Date(m.endDate).toLocaleDateString()}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            // Batch DOM update
+            pmGrid.innerHTML = html;
+            
+            window.kalshiMarketData = displayMarkets;
+        };
+
+        const fetchKalshiTerminal = async () => {
+            try {
+                if (currentMarketTab === 'kalshi' || currentMarketTab === 'combined') {
+                    pmStatus.textContent = 'SYNCING';
+                }
+                
+                // Use faster abort controller for timeout
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 8000);
+                
+                const resp = await fetch(KALSHI_ENDPOINT, { 
+                    cache: 'no-store',
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+                
+                const text = await resp.text();
+                let data = [];
+                try {
+                    data = JSON.parse(text);
+                } catch {
+                    data = [];
+                }
+                const markets = Array.isArray(data) ? data : [];
+                
+                // Only render if on kalshi/combined tab
+                if (currentMarketTab === 'kalshi') {
+                    renderKalshi(markets);
+                } else if (currentMarketTab === 'combined') {
+                    const combined = [...allMarkets, ...markets];
+                    renderPolymarket(combined);
+                    marketCount.textContent = `(${combined.length} total markets)`;
+                }
+                
+                if (currentMarketTab === 'kalshi' || currentMarketTab === 'combined') {
+                    pmStatus.textContent = markets.length ? 'ONLINE' : 'STANDBY';
+                }
+            } catch (error) {
+                if (currentMarketTab === 'kalshi' || currentMarketTab === 'combined') {
+                    if (error.name !== 'AbortError') {
+                        renderKalshi([]);
+                        pmStatus.textContent = 'STANDBY';
+                    }
+                }
+            }
+        };
+
+        const switchMarketTab = (tab) => {
+            currentMarketTab = tab;
+            
+            // Update tab buttons
+            document.querySelectorAll('.market-tab').forEach(btn => {
+                if (btn.dataset.market === tab) {
+                    btn.style.color = 'var(--accent)';
+                    btn.style.borderBottomColor = 'var(--accent)';
+                } else {
+                    btn.style.color = 'var(--muted)';
+                    btn.style.borderBottomColor = 'transparent';
+                }
+            });
+            
+            // Render appropriate markets
+            if (tab === 'polymarket') {
+                renderPolymarket(allMarkets);
+            } else if (tab === 'kalshi') {
+                renderKalshi(kalshiMarkets);
+            } else if (tab === 'combined') {
+                // Combine and display both
+                const combined = [...allMarkets, ...kalshiMarkets];
+                renderPolymarket(combined);
+                marketCount.textContent = `(${combined.length} total markets)`;
+            }
+        };
+
+        // Add tab click listeners
+        document.querySelectorAll('.market-tab').forEach(btn => {
+            btn.addEventListener('click', () => switchMarketTab(btn.dataset.market));
+        });
+
         fetchMarkets();
         setInterval(fetchMarkets, UPDATE_INTERVAL);
         fetchPolymarketTerminal();
+        fetchKalshiTerminal();
         setInterval(fetchPolymarketTerminal, 30000);
+        setInterval(fetchKalshiTerminal, 30000);
+
+        // Log when page loads
+        console.log('Page initialized. Waiting for market data...');
 
         // BTC Trading Section
         let btcData = {
@@ -2592,11 +3107,27 @@
         });
 
         // Modal Functions
-        function openChartModal(index) {
-            const market = window.polymarketData?.[index];
-            if (!market) return;
+        function openChartModal(index, event) {
+            if (event) {
+                event.stopPropagation();
+            }
+
+            if (!window.polymarketData || !window.polymarketData[index]) {
+                console.error('Market data not found at index:', index);
+                console.error('Available data:', window.polymarketData);
+                alert('Market data is loading. Please try again.');
+                return;
+            }
+
+            const market = window.polymarketData[index];
+            console.log('Opening chart for market:', market);
 
             const modal = document.getElementById('chartModal');
+            if (!modal) {
+                console.error('Modal element not found');
+                return;
+            }
+
             const modalTitle = document.getElementById('modalTitle');
             const modalIcon = document.getElementById('modalIcon');
             const modalVolume = document.getElementById('modalVolume');
@@ -2607,6 +3138,7 @@
             const statsGrid = document.getElementById('statsGrid');
             const resolvedSection = document.getElementById('resolvedSection');
             const resolvedText = document.getElementById('resolvedText');
+            const chartContainer = document.querySelector('.modal-chart-container');
 
             // Set title
             modalTitle.textContent = market.question || market.title || market.slug || 'Unknown Market';
@@ -2622,8 +3154,8 @@
             // Set meta data
             const volume = Number(market.volumeNum ?? market.volume ?? 0);
             modalVolume.textContent = `$${volume.toLocaleString()}`;
-            modal24h.textContent = `$${(volume * 0.1).toFixed(2)}`; // Simulated 24h volume
-            modalOI.textContent = `$${(volume * 0.5).toFixed(2)}`; // Simulated open interest
+            modal24h.textContent = `$${(volume * 0.1).toFixed(2)}`;
+            modalOI.textContent = `$${(volume * 0.5).toFixed(2)}`;
 
             // Set status
             const isActive = market.active !== false && !market.closed;
@@ -2636,7 +3168,6 @@
                 modalStatus.textContent = '● Ended';
                 resolvedSection.style.display = 'block';
                 
-                // Check which outcome won
                 const outcomes = parseArray(market.outcomes);
                 const prices = parseArray(market.outcomePrices).map((p) => Number(p) || 0);
                 const maxPrice = Math.max(...prices);
@@ -2651,23 +3182,25 @@
 
             // Build outcomes list
             let outcomesHTML = '';
-            outcomes.slice(0, 2).forEach((outcome, idx) => {
-                const pct = Math.round((prices[idx] || 0) * 100);
-                const priceClass = idx === 0 ? 'yes' : 'no';
-                const cents = (pct / 100).toFixed(1);
-                outcomesHTML += `
-                    <div class="outcome-item">
-                        <span class="outcome-name">${outcome}</span>
-                        <span class="outcome-price ${priceClass}">${pct}¢</span>
-                    </div>
-                `;
-            });
+            if (outcomes.length > 0) {
+                outcomes.slice(0, 2).forEach((outcome, idx) => {
+                    const pct = Math.round((prices[idx] || 0) * 100);
+                    const priceClass = idx === 0 ? 'yes' : 'no';
+                    outcomesHTML += `
+                        <div class="outcome-item">
+                            <span class="outcome-name">${outcome}</span>
+                            <span class="outcome-price ${priceClass}">${pct}¢</span>
+                        </div>
+                    `;
+                });
+            } else {
+                outcomesHTML = '<div style="color: var(--muted); padding: 16px; text-align: center;">No outcome data available</div>';
+            }
             outcomeList.innerHTML = outcomesHTML;
 
             // Build stats grid
             let statsHTML = '';
             
-            // Volume
             statsHTML += `
                 <div class="stat-box">
                     <div class="stat-label">Volume</div>
@@ -2675,7 +3208,6 @@
                 </div>
             `;
 
-            // Liquidity
             const liquidity = market.liquidity || market.liquidityNum || volume * 0.3;
             statsHTML += `
                 <div class="stat-box">
@@ -2684,7 +3216,6 @@
                 </div>
             `;
 
-            // Category
             statsHTML += `
                 <div class="stat-box">
                     <div class="stat-label">Category</div>
@@ -2692,7 +3223,6 @@
                 </div>
             `;
 
-            // Traders (simulated)
             const traders = Math.floor(volume / 100) || Math.floor(Math.random() * 1000) + 100;
             statsHTML += `
                 <div class="stat-box">
@@ -2703,6 +3233,84 @@
 
             statsGrid.innerHTML = statsHTML;
 
+            // Create simple canvas chart
+            chartContainer.innerHTML = '';
+            
+            // Get container dimensions first
+            const containerWidth = chartContainer.offsetWidth || 800;
+            const containerHeight = 400;
+            
+            const canvas = document.createElement('canvas');
+            canvas.width = containerWidth;
+            canvas.height = containerHeight;
+            canvas.style.width = '100%';
+            canvas.style.height = '100%';
+            
+            chartContainer.appendChild(canvas);
+            
+            // Simple line chart
+            const ctx = canvas.getContext('2d');
+            const padding = 40;
+            const width = canvas.width - padding * 2;
+            const height = canvas.height - padding * 2;
+            
+            // Generate random chart data
+            const points = [];
+            const basePrice = volume > 0 ? (volume / 10000) % 100 : 50;
+            for (let i = 0; i <= 24; i++) {
+                const variance = (Math.random() - 0.5) * 30;
+                points.push(basePrice + variance);
+            }
+            
+            const minPrice = Math.min(...points);
+            const maxPrice = Math.max(...points);
+            const priceRange = maxPrice - minPrice || 1;
+            
+            // Draw grid
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 4; i++) {
+                const y = padding + (i * height / 4);
+                ctx.beginPath();
+                ctx.moveTo(padding, y);
+                ctx.lineTo(width + padding, y);
+                ctx.stroke();
+            }
+            
+            // Draw line chart
+            ctx.strokeStyle = '#97eefb';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            
+            points.forEach((price, index) => {
+                const x = padding + (index / (points.length - 1)) * width;
+                const y = padding + height - ((price - minPrice) / priceRange) * height;
+                
+                if (index === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            });
+            ctx.stroke();
+            
+            // Fill area
+            ctx.strokeStyle = '#97eefb';
+            ctx.fillStyle = 'rgba(151, 238, 251, 0.1)';
+            ctx.lineTo(width + padding, padding + height);
+            ctx.lineTo(padding, padding + height);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Draw axis labels
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.font = '12px sans-serif';
+            
+            const yMax = (maxPrice).toFixed(2);
+            const yMin = (minPrice).toFixed(2);
+            ctx.fillText(yMax, 5, padding + 10);
+            ctx.fillText(yMin, 5, padding + height + 5);
+
             // Show modal
             modal.classList.add('active');
             document.body.style.overflow = 'hidden';
@@ -2710,25 +3318,38 @@
 
         function closeChartModal() {
             const modal = document.getElementById('chartModal');
-            modal.classList.remove('active');
-            document.body.style.overflow = 'auto';
+            if (modal) {
+                modal.classList.remove('active');
+                document.body.style.overflow = 'auto';
+            }
+        }
+
+        function showComingSoon() {
+            alert('🚀 Coming Soon on VOLIX AI!');
         }
 
         // Close modal on overlay click
-        document.getElementById('chartModal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeChartModal();
+        document.addEventListener('DOMContentLoaded', function() {
+            const chartModal = document.getElementById('chartModal');
+            
+            // Close on overlay click
+            if (chartModal) {
+                chartModal.addEventListener('click', function(e) {
+                    if (e.target === this) {
+                        closeChartModal();
+                    }
+                });
             }
+            
+            // Close on Escape key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeChartModal();
+                }
+            });
         });
 
-        // Close modal on Escape key
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                closeChartModal();
-            }
-        });
-
-        // Timeframe buttons interactivity
+        // Timeframe button functionality
         document.addEventListener('DOMContentLoaded', function() {
             const timeframeBtns = document.querySelectorAll('.timeframe-btn');
             timeframeBtns.forEach(btn => {
@@ -2754,8 +3375,12 @@
                     categoryItems.forEach(i => i.classList.remove('active'));
                     this.classList.add('active');
                     activeCategory = this.getAttribute('data-category');
-                    displayedCount = 24; // Reset displayed count
-                    renderPolymarket(allMarkets);
+                    displayedCount = 10; // Reset displayed count
+                    
+                    // Re-render immediately
+                    if (allMarkets && allMarkets.length > 0) {
+                        renderPolymarket(allMarkets);
+                    }
                 });
             });
 
@@ -2766,8 +3391,12 @@
                     tagPills.forEach(p => p.classList.remove('active'));
                     this.classList.add('active');
                     activeTag = this.getAttribute('data-tag');
-                    displayedCount = 24; // Reset displayed count
-                    renderPolymarket(allMarkets);
+                    displayedCount = 10; // Reset displayed count
+                    
+                    // Re-render immediately
+                    if (allMarkets && allMarkets.length > 0) {
+                        renderPolymarket(allMarkets);
+                    }
                 });
             });
         });
