@@ -5,6 +5,9 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
 
   if (req.method === 'OPTIONS') {
     res.status(200).end();
@@ -12,6 +15,13 @@ export default async function handler(req, res) {
   }
 
   const SYMBOLS = ['BTC', 'ETH', 'BNB', 'XRP', 'SOL', 'ADA', 'DOGE', 'AVAX'];
+  const BINANCE_HOSTS = [
+    'https://api.binance.com',
+    'https://data.binance.com',
+    'https://api1.binance.com',
+    'https://api2.binance.com',
+    'https://api3.binance.com'
+  ];
   const COINGECKO_IDS = {
     BTC: 'bitcoin',
     ETH: 'ethereum',
@@ -22,77 +32,45 @@ export default async function handler(req, res) {
     DOGE: 'dogecoin',
     AVAX: 'avalanche-2'
   };
+  const PROVIDER = (process.env.PRICE_PROVIDER || 'binance').toLowerCase();
 
   const fetchBinanceAll = async () => {
     const symbols = SYMBOLS.map((s) => `${s}USDT`);
     const query = encodeURIComponent(JSON.stringify(symbols));
-    const url = `https://api.binance.com/api/v3/ticker/24hr?symbols=${query}`;
-    const resp = await fetch(url, { method: 'GET' });
-    if (!resp.ok) throw new Error(`Binance ${resp.status}`);
-    const data = await resp.json();
-    const map = {};
-    data.forEach((item) => {
-      const sym = item.symbol.replace('USDT', '');
-      map[sym] = {
-        price: Number(item.lastPrice),
-        change24h: Number(item.priceChangePercent),
-        rsi: 40 + Math.random() * 20,
-        source: 'binance'
-      };
-    });
-    return { map, source: 'binance' };
-  };
 
-  const fetchBybitAll = async () => {
-    const url = 'https://api.bybit.com/v5/market/tickers?category=spot';
-    const resp = await fetch(url, { method: 'GET' });
-    if (!resp.ok) throw new Error(`Bybit ${resp.status}`);
-    const data = await resp.json();
-    const list = data?.result?.list || [];
-    const map = {};
-    list.forEach((item) => {
-      const sym = (item.symbol || '').replace('USDT', '');
-      if (!SYMBOLS.includes(sym)) return;
-      const pct = Number(item.price24hPcnt || 0) * 100;
-      map[sym] = {
-        price: Number(item.lastPrice),
-        change24h: Number(pct),
-        rsi: 40 + Math.random() * 20,
-        source: 'bybit'
-      };
-    });
-    return { map, source: 'bybit' };
-  };
+    for (const host of BINANCE_HOSTS) {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 4000);
+      try {
+        const url = `${host}/api/v3/ticker/24hr?symbols=${query}`;
+        const resp = await fetch(url, { method: 'GET', cache: 'no-store', signal: controller.signal });
+        if (!resp.ok) throw new Error(`Binance ${resp.status}`);
+        const data = await resp.json();
+        const map = {};
+        data.forEach((item) => {
+          const sym = item.symbol.replace('USDT', '');
+          map[sym] = {
+            price: Number(item.lastPrice),
+            change24h: Number(item.priceChangePercent),
+            rsi: 40 + Math.random() * 20,
+            source: host
+          };
+        });
+        clearTimeout(timeout);
+        return { map, source: 'binance' };
+      } catch {
+        clearTimeout(timeout);
+        continue;
+      }
+    }
 
-  const fetchOkxAll = async () => {
-    const url = 'https://www.okx.com/api/v5/market/tickers?instType=SPOT';
-    const resp = await fetch(url, { method: 'GET' });
-    if (!resp.ok) throw new Error(`OKX ${resp.status}`);
-    const data = await resp.json();
-    const list = data?.data || [];
-    const map = {};
-    list.forEach((item) => {
-      const instId = item.instId || '';
-      if (!instId.endsWith('-USDT')) return;
-      const sym = instId.replace('-USDT', '');
-      if (!SYMBOLS.includes(sym)) return;
-      const last = Number(item.last);
-      const open = Number(item.open24h || last);
-      const pct = open ? ((last - open) / open) * 100 : 0;
-      map[sym] = {
-        price: last,
-        change24h: Number(pct),
-        rsi: 40 + Math.random() * 20,
-        source: 'okx'
-      };
-    });
-    return { map, source: 'okx' };
+    throw new Error('All Binance hosts failed');
   };
 
   const fetchCryptoCompareAll = async () => {
     const fsyms = SYMBOLS.join(',');
     const url = `https://min-api.cryptocompare.com/data/pricemultifull?fsyms=${fsyms}&tsyms=USD`;
-    const resp = await fetch(url, { method: 'GET' });
+    const resp = await fetch(url, { method: 'GET', cache: 'no-store' });
     if (!resp.ok) throw new Error(`CryptoCompare ${resp.status}`);
     const data = await resp.json();
     const raw = data?.RAW || {};
@@ -113,7 +91,7 @@ export default async function handler(req, res) {
   const fetchCoingeckoAll = async () => {
     const ids = SYMBOLS.map((s) => COINGECKO_IDS[s]).join(',');
     const url = `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`;
-    const resp = await fetch(url, { method: 'GET' });
+    const resp = await fetch(url, { method: 'GET', cache: 'no-store' });
     if (!resp.ok) throw new Error(`CoinGecko ${resp.status}`);
     const data = await resp.json();
     const map = {};
@@ -174,36 +152,16 @@ export default async function handler(req, res) {
     let marketMap = {};
     let marketSource = 'fallback';
     try {
-      const result = await fetchCoingeckoAll();
+      const fetcher =
+        PROVIDER === 'cryptocompare' ? fetchCryptoCompareAll :
+        PROVIDER === 'coingecko' ? fetchCoingeckoAll :
+        fetchBinanceAll;
+      const result = await fetcher();
       marketMap = result.map || {};
-      marketSource = result.source || 'coingecko';
+      marketSource = result.source || PROVIDER;
     } catch {
-      try {
-        const result = await fetchCryptoCompareAll();
-        marketMap = result.map || {};
-        marketSource = result.source || 'cryptocompare';
-      } catch {
-        try {
-          const result = await fetchBinanceAll();
-          marketMap = result.map || {};
-          marketSource = result.source || 'binance';
-        } catch {
-          try {
-            const result = await fetchBybitAll();
-            marketMap = result.map || {};
-            marketSource = result.source || 'bybit';
-          } catch {
-            try {
-              const result = await fetchOkxAll();
-              marketMap = result.map || {};
-              marketSource = result.source || 'okx';
-            } catch {
-              marketMap = {};
-              marketSource = 'unavailable';
-            }
-          }
-        }
-      }
+      marketMap = {};
+      marketSource = 'unavailable';
     }
 
     if (!Object.keys(marketMap).length) {
