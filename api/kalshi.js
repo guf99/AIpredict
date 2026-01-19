@@ -1,135 +1,90 @@
-/**
- * Kalshi API Integration
- * Fetches prediction market data from Kalshi platform
- */
+// Vercel Serverless Function - Kalshi Proxy
 
-const KALSHI_API = 'https://api.kalshi.com/trade-api/v2';
+export default async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
 
-/**
- * Fetch markets from Kalshi
- * @returns {Promise<Array>} Array of market objects
- */
-async function fetchKalshiMarkets() {
-    try {
-        // Kalshi markets endpoint
-        const response = await fetch(`${KALSHI_API}/markets`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        });
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
 
-        if (!response.ok) {
-            throw new Error(`Kalshi API error: ${response.status}`);
-        }
-
-        const data = await response.json();
-        
-        // Transform Kalshi data to match our format
-        return transformKalshiData(data.markets || []);
-    } catch (error) {
-        console.error('Kalshi API fetch error:', error);
-        return generateMockKalshiData();
+  try {
+    // Try real Kalshi API
+    const url = 'https://api.kalshi.com/trade-api/v2/markets?limit=50';
+    const resp = await fetch(url, {
+      method: 'GET',
+      cache: 'no-store',
+      headers: {
+        'User-Agent': 'Mozilla/5.0',
+        'Accept': 'application/json'
+      }
+    });
+    
+    if (resp.ok) {
+      const data = await resp.json();
+      if (data.markets && data.markets.length > 0) {
+        return res.status(200).json(data);
+      }
     }
+  } catch (error) {
+    console.log('Real Kalshi API failed, using fallback');
+  }
+
+  // Fallback: Generate mock markets
+  const mockMarkets = generateMockMarkets(50);
+  return res.status(200).json({ markets: mockMarkets });
 }
 
-/**
- * Transform Kalshi data format to standardized format
- * @param {Array} kalshiMarkets - Raw Kalshi market data
- * @returns {Array} Standardized market objects
- */
-function transformKalshiData(kalshiMarkets) {
-    return kalshiMarkets.slice(0, 20).map(market => ({
-        id: market.id || market.ticker,
-        question: market.title || market.subtitle,
-        title: market.title,
-        slug: market.ticker,
-        category: market.category || 'General',
-        outcomes: ['Yes', 'No'],
-        outcomePrices: [
-            market.yes_price ? (market.yes_price / 100).toFixed(2) : '0.50',
-            market.no_price ? (market.no_price / 100).toFixed(2) : '0.50'
-        ],
-        volume: market.volume ? Math.floor(market.volume / 1000) * 1000 : 50000,
-        volumeNum: market.volume || 50000,
-        liquidity: market.liquidity || 10000,
-        liquidityNum: market.liquidity || 10000,
-        active: market.state === 'open',
-        closed: market.state !== 'open',
-        icon: 'https://kalshi.com/favicon.ico',
-        image: 'https://kalshi.com/favicon.ico',
-        description: market.subtitle || 'Kalshi market',
-        platform: 'kalshi',
-        createdAt: market.created_at,
-        expiration: market.expiration_date,
-    }));
+function generateMockMarkets(count = 50) {
+  const questions = [
+    'Will Fed cut rates in Q1 2025?',
+    'US unemployment rate below 4% in Q1?',
+    'US inflation CPI above 3.5% in January?',
+    'S&P 500 hits new ATH by end of Q1?',
+    'Bitcoin trading above $95k in Q1?',
+    'Oil prices exceed $85/barrel in Q1?',
+    'Gold prices reach $2,500/oz in Q1?',
+    '10Y Treasury yield above 4.5% in Q1?',
+    'Corporate earnings growth positive in Q1?',
+    'Tech sector outperforms market in Q1?',
+    'USD strengthens against major peers in Q1?',
+    'Volatility index VIX above 20 in Q1?',
+    'Yield curve inversion persists through Q1?',
+    'Credit spreads tighten 50bps in Q1?',
+    'Home prices fall 5% or more in Q1?',
+    'Commercial real estate stress increases in Q1?',
+    'Bank lending standards tighten in Q1?',
+    'Money supply M2 contracts in Q1?',
+    'Savings rate remains above 4% in Q1?',
+    'Real estate investment trusts outperform in Q1?',
+    'Crypto volatility exceeds stock volatility in Q1?',
+    'Emerging markets rally 10%+ in Q1?',
+    'China stimulus announced before March 2025?',
+    'Euro strengthens above 1.12 vs USD?',
+    'Yen appreciates against USD in Q1?',
+    'Commodities index exceeds 260 in Q1?',
+    'Agricultural prices spike 15%+ in Q1?',
+    'Energy sector leads in performance in Q1?',
+    'Supply chain disruptions increase in Q1?',
+    'Labor market softens significantly in Q1?'
+  ];
+
+  return Array.from({ length: Math.min(count, questions.length) }, (_, i) => ({
+    id: `kalshi-${i + 1}`,
+    ticker: `KALSHI${i + 1}`,
+    title: questions[i],
+    subtitle: `Prediction market for ${questions[i].slice(0, 30)}...`,
+    category: 'Finance',
+    outcomes: ['Yes', 'No'],
+    yes_price: Math.floor(Math.random() * 70) + 20,
+    no_price: Math.floor(Math.random() * 70) + 20,
+    volume: Math.floor(Math.random() * 3000000) + 500000,
+    liquidity: Math.floor(Math.random() * 1000000) + 200000,
+    state: 'open',
+    created_at: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
+    expiration_date: new Date(Date.now() + Math.random() * 300 * 24 * 60 * 60 * 1000).toISOString()
+  }));
 }
-
-/**
- * Generate mock Kalshi data for testing
- * @returns {Array} Mock market data
- */
-function generateMockKalshiData() {
-    const mockMarkets = [
-        {
-            question: 'Will the Federal Reserve raise rates in February 2026?',
-            title: 'Fed Rate Hike February',
-            slug: 'fed-rate-feb-2026',
-            category: 'Finance',
-            yes_price: 35,
-            no_price: 65,
-            volume: 8500000,
-            liquidity: 1200000,
-            state: 'open',
-            ticker: 'FRED1',
-        },
-        {
-            question: 'Will BTC close above $95,000 on January 24?',
-            title: 'Bitcoin $95k Close',
-            slug: 'btc-95k-jan24',
-            category: 'Crypto',
-            yes_price: 72,
-            no_price: 28,
-            volume: 12000000,
-            liquidity: 2500000,
-            state: 'open',
-            ticker: 'BTCUSD1',
-        },
-        {
-            question: 'Will the S&P 500 close higher on Friday?',
-            title: 'S&P 500 Friday Close',
-            slug: 'sp500-friday',
-            category: 'Finance',
-            yes_price: 58,
-            no_price: 42,
-            volume: 6000000,
-            liquidity: 950000,
-            state: 'open',
-            ticker: 'SPX1',
-        },
-    ];
-
-    return transformKalshiData(mockMarkets);
-}
-
-/**
- * Get single market details from Kalshi
- * @param {String} marketId - Market ID or ticker
- * @returns {Promise<Object>} Market details
- */
-async function getKalshiMarketDetails(marketId) {
-    try {
-        const response = await fetch(`${KALSHI_API}/markets/${marketId}`);
-        const data = await response.json();
-        return transformKalshiData([data.market])[0];
-    } catch (error) {
-        console.error('Failed to fetch Kalshi market details:', error);
-        return null;
-    }
-}
-
-module.exports = {
-    fetchKalshiMarkets,
-    getKalshiMarketDetails,
-    transformKalshiData,
-};
