@@ -5,3 +5,10 @@ README.md
 node_modules
 npm-debug.log
 ml-service/
+dev-server.cjs
+test-*.js
+test-*.cjs
+.vscode
+.env
+.env.local
+
