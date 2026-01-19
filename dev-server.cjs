@@ -6,14 +6,16 @@
  */
 
 const http = require('http');
+const https = require('https');
+const { execFile } = require('child_process');
 const fs = require('fs');
 const path = require('path');
-const url = require('url');
+const { URL } = require('url');
 
-const PORT = 3000;
-const HOST = 'localhost';
+const PORT = Number(process.env.PORT) || 5173;
+const HOST = '127.0.0.1';
 
-// Mock API endpoints for local testing
+// API endpoints for local testing (real-time with fallback)
 const mockEndpoints = {
   '/api/health': () => ({
     status: 'ok',
@@ -22,53 +24,213 @@ const mockEndpoints = {
     environment: 'development',
     timestamp: new Date().toISOString()
   }),
-  '/api/predictions': () => {
-    // Mock predictions data matching frontend schema
+  '/api/predictions': async () => {
     const coins = ['BTC', 'ETH', 'BNB', 'XRP', 'SOL', 'ADA', 'DOGE', 'AVAX'];
-    const basePrices = { BTC: 98612, ETH: 3545, BNB: 612, XRP: 2.45, SOL: 195, ADA: 1.05, DOGE: 0.42, AVAX: 35 };
 
-    return coins.map((coin) => {
-      const basePrice = basePrices[coin];
-      const change24h = (Math.random() - 0.5) * 5;
-      const currentPrice = basePrice * (1 + change24h / 100);
-      const momentum = (Math.random() - 0.5) * 40;
-      const confidence = 55 + Math.random() * 35;
-      const direction = momentum > 10 ? 'LONG' : momentum < -10 ? 'SHORT' : 'HOLD';
-      const signal = Math.abs(momentum) > 15 ? 'STRONG' : Math.abs(momentum) > 7 ? 'MODERATE' : 'WEAK';
-      const entry = currentPrice * 0.98;
-      const stoploss = currentPrice * 1.05;
-      const tp1 = currentPrice * 1.025;
-      const tp2 = currentPrice * 1.035;
-      const tp3 = currentPrice * 1.05;
+    const fetchJsonNative = (apiUrl) => new Promise((resolve, reject) => {
+      https.get(apiUrl, (resp) => {
+        let data = '';
+        resp.on('data', (chunk) => (data += chunk));
+        resp.on('end', () => {
+          if (resp.statusCode !== 200) return reject(new Error('HTTP error'));
+          try { resolve(JSON.parse(data)); } catch (e) { reject(e); }
+        });
+      }).on('error', reject);
+    });
 
-      return {
-        pair: `${coin}/USDT`,
-        currentPrice: Number(currentPrice.toFixed(2)),
-        change24h: Number(change24h.toFixed(2)),
-        direction,
-        signal,
-        confidence: Math.round(confidence),
-        entry: Number(entry.toFixed(4)),
-        stoploss: Number(stoploss.toFixed(4)),
-        riskReward: 2.5,
-        takeProfitLevels: {
-          tp1: { price: Number(tp1.toFixed(4)), percentGain: 2.5 },
-          tp2: { price: Number(tp2.toFixed(4)), percentGain: 3.5 },
-          tp3: { price: Number(tp3.toFixed(4)), percentGain: 5.0 }
-        },
-        technicalIndicators: {
-          rsi: Number((40 + Math.random() * 20).toFixed(2)),
-          momentum: Number(momentum.toFixed(3)),
-          volatility: Number(Math.abs(change24h).toFixed(2)),
-          volumeStrength: Number((50 + Math.random() * 50).toFixed(1))
-        },
-        timestamp: new Date().toISOString()
+    const fetchJsonPowerShell = (apiUrl) => new Promise((resolve, reject) => {
+      const args = [
+        '-Command',
+        `Invoke-WebRequest '${apiUrl}' -UseBasicParsing | Select-Object -ExpandProperty Content`
+      ];
+      execFile('powershell', args, { maxBuffer: 10 * 1024 * 1024 }, (err, stdout) => {
+        if (err) return reject(err);
+        try { resolve(JSON.parse(stdout)); } catch (e) { reject(e); }
+      });
+    });
+
+    const fetchJson = async (apiUrl) => {
+      try {
+        return await fetchJsonNative(apiUrl);
+      } catch {
+        return await fetchJsonPowerShell(apiUrl);
+      }
+    };
+
+    const fetchBinanceAll = async () => {
+      const symbols = coins.map((s) => `${s}USDT`);
+      const query = encodeURIComponent(JSON.stringify(symbols));
+      const data = await fetchJson(`https://api.binance.com/api/v3/ticker/24hr?symbols=${query}`);
+      const map = {};
+      data.forEach((item) => {
+        const sym = item.symbol.replace('USDT', '');
+        map[sym] = {
+          price: Number(item.lastPrice),
+          change24h: Number(item.priceChangePercent),
+          source: 'binance'
+        };
+      });
+      return map;
+    };
+
+    const fetchBybitAll = async () => {
+      const data = await fetchJson('https://api.bybit.com/v5/market/tickers?category=spot');
+      const list = data?.result?.list || [];
+      const map = {};
+      list.forEach((item) => {
+        const sym = (item.symbol || '').replace('USDT', '');
+        if (!coins.includes(sym)) return;
+        const pct = Number(item.price24hPcnt || 0) * 100;
+        map[sym] = {
+          price: Number(item.lastPrice),
+          change24h: Number(pct),
+          source: 'bybit'
+        };
+      });
+      return map;
+    };
+
+    const fetchOkxAll = async () => {
+      const data = await fetchJson('https://www.okx.com/api/v5/market/tickers?instType=SPOT');
+      const list = data?.data || [];
+      const map = {};
+      list.forEach((item) => {
+        const instId = item.instId || '';
+        if (!instId.endsWith('-USDT')) return;
+        const sym = instId.replace('-USDT', '');
+        if (!coins.includes(sym)) return;
+        const last = Number(item.last);
+        const open = Number(item.open24h || last);
+        const pct = open ? ((last - open) / open) * 100 : 0;
+        map[sym] = {
+          price: last,
+          change24h: Number(pct),
+          source: 'okx'
+        };
+      });
+      return map;
+    };
+
+    const fetchCryptoCompareAll = async () => {
+      const fsyms = coins.join(',');
+      const data = await fetchJson(`https://min-api.cryptocompare.com/data/pricemultifull?fsyms=${fsyms}&tsyms=USD`);
+      const raw = data?.RAW || {};
+      const map = {};
+      coins.forEach((sym) => {
+        const entry = raw[sym]?.USD;
+        if (!entry) return;
+        map[sym] = {
+          price: Number(entry.PRICE),
+          change24h: Number(entry.CHANGEPCT24HOUR),
+          source: 'cryptocompare'
+        };
+      });
+      return map;
+    };
+
+    const fetchCoingeckoAll = async () => {
+      const ids = {
+        BTC: 'bitcoin',
+        ETH: 'ethereum',
+        BNB: 'binancecoin',
+        XRP: 'ripple',
+        SOL: 'solana',
+        ADA: 'cardano',
+        DOGE: 'dogecoin',
+        AVAX: 'avalanche-2'
       };
-    }).sort((a, b) => b.confidence - a.confidence);
+      const list = coins.map((s) => ids[s]).join(',');
+      const data = await fetchJson(`https://api.coingecko.com/api/v3/simple/price?ids=${list}&vs_currencies=usd&include_24hr_change=true`);
+      const map = {};
+      coins.forEach((sym) => {
+        const entry = data[ids[sym]];
+        if (!entry) return;
+        map[sym] = {
+          price: Number(entry.usd),
+          change24h: Number(entry.usd_24h_change || 0),
+          source: 'coingecko'
+        };
+      });
+      return map;
+    };
+
+    let marketMap = {};
+    try {
+      marketMap = await fetchCoingeckoAll();
+    } catch {
+      try {
+        marketMap = await fetchCryptoCompareAll();
+      } catch {
+        try {
+          marketMap = await fetchBinanceAll();
+        } catch {
+          try {
+            marketMap = await fetchBybitAll();
+          } catch {
+            try {
+              marketMap = await fetchOkxAll();
+            } catch {
+              marketMap = {};
+            }
+          }
+        }
+      }
+    }
+
+    if (!Object.keys(marketMap).length) {
+      return [];
+    }
+
+    const predictions = await Promise.all(
+      coins.map(async (coin) => {
+        const market = marketMap[coin];
+        if (!market) {
+          return null;
+        }
+
+        const momentum = (Math.random() - 0.5) * 40;
+        const confidence = 55 + Math.random() * 35;
+        const direction = momentum > 10 ? 'LONG' : momentum < -10 ? 'SHORT' : 'HOLD';
+        const signal = Math.abs(momentum) > 15 ? 'STRONG' : Math.abs(momentum) > 7 ? 'MODERATE' : 'WEAK';
+
+        const entry = market.price * 0.98;
+        const stoploss = market.price * 1.05;
+        const tp1 = market.price * 1.025;
+        const tp2 = market.price * 1.035;
+        const tp3 = market.price * 1.05;
+
+        return {
+          pair: `${coin}/USDT`,
+          currentPrice: Number(market.price.toFixed(2)),
+          change24h: Number(market.change24h.toFixed(2)),
+          source: market.source || 'binance',
+          direction,
+          signal,
+          confidence: Math.round(confidence),
+          entry: Number(entry.toFixed(4)),
+          stoploss: Number(stoploss.toFixed(4)),
+          riskReward: 2.5,
+          takeProfitLevels: {
+            tp1: { price: Number(tp1.toFixed(4)), percentGain: 2.5 },
+            tp2: { price: Number(tp2.toFixed(4)), percentGain: 3.5 },
+            tp3: { price: Number(tp3.toFixed(4)), percentGain: 5.0 }
+          },
+          technicalIndicators: {
+            rsi: Number((40 + Math.random() * 20).toFixed(2)),
+            momentum: Number(momentum.toFixed(3)),
+            volatility: Number(Math.abs(market.change24h).toFixed(2)),
+            volumeStrength: Number((50 + Math.random() * 50).toFixed(1))
+          },
+          timestamp: new Date().toISOString()
+        };
+      })
+    );
+
+    return predictions.filter(Boolean).sort((a, b) => b.confidence - a.confidence);
   }
 };
 
-const server = http.createServer((req, res) => {
+const server = http.createServer(async (req, res) => {
   // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -81,10 +243,10 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // Parse URL
-  const parsedUrl = url.parse(req.url, true);
+  // Parse URL (WHATWG URL API)
+  const parsedUrl = new URL(req.url, `http://${HOST}:${PORT}`);
   const pathname = parsedUrl.pathname;
-  const query = parsedUrl.query;
+  const query = Object.fromEntries(parsedUrl.searchParams.entries());
 
   // API endpoints
   if (pathname === '/api/health') {
@@ -94,13 +256,25 @@ const server = http.createServer((req, res) => {
   }
 
   if (pathname === '/api/predictions') {
-    res.writeHead(200);
     if (query.symbol) {
-      const predictions = mockEndpoints['/api/predictions']();
+      const predictions = await mockEndpoints['/api/predictions']();
+      if (!predictions.length) {
+        res.writeHead(503);
+        res.end(JSON.stringify({ error: 'Price source unavailable' }));
+        return;
+      }
       const filtered = predictions.find(p => p.pair.startsWith(query.symbol));
+      res.writeHead(200);
       res.end(JSON.stringify(filtered || predictions[0]));
     } else {
-      res.end(JSON.stringify(mockEndpoints['/api/predictions']()));
+      const predictions = await mockEndpoints['/api/predictions']();
+      if (!predictions.length) {
+        res.writeHead(503);
+        res.end(JSON.stringify({ error: 'Price source unavailable' }));
+        return;
+      }
+      res.writeHead(200);
+      res.end(JSON.stringify(predictions));
     }
     return;
   }

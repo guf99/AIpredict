@@ -345,8 +345,8 @@
     </div>
 
     <script>
-        const API_URL = window.location.hostname === 'localhost' 
-            ? 'http://localhost:3000'
+        const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+            ? 'http://127.0.0.1:5173'
             : '';
         const UPDATE_INTERVAL = 5000 // 5 seconds
 
@@ -379,6 +379,10 @@
                 if (!data) return
 
                 this.predictions = Array.isArray(data) ? data : [data]
+                if (this.predictions.length === 0) {
+                    this.showError('No real-time price source available. Check network/firewall.')
+                    return
+                }
                 this.render()
                 this.updateStatus('Connected')
             }
@@ -403,20 +407,27 @@
                 const priceChange = parseFloat(pred.change24h)
                 const priceChangeClass = priceChange >= 0 ? 'positive' : 'negative'
                 const confidenceClass = pred.confidence >= 75 ? 'confidence-high' : pred.confidence >= 65 ? 'confidence-medium' : 'confidence-low'
+                const formatPrice = (value) => {
+                    if (value >= 1000) return value.toFixed(2)
+                    if (value >= 1) return value.toFixed(4)
+                    return value.toFixed(6)
+                }
 
                 return `
                     <div class="card">
                         <div class="card-header">
                             <div>
                                 <div class="card-title">${pred.pair}</div>
-                                <div style="color: var(--text-secondary); font-size: 12px; margin-top: 3px;">${pred.reasoning || 'Trading signal'}</div>
+                                <div style="color: var(--text-secondary); font-size: 12px; margin-top: 3px;">
+                                    ${pred.reasoning || 'Trading signal'} • Source: ${(pred.source || 'binance').toUpperCase()}
+                                </div>
                             </div>
                             <div class="price-change ${priceChangeClass}">
                                 ${priceChange > 0 ? '+' : ''}${priceChange.toFixed(2)}%
                             </div>
                         </div>
 
-                        <div class="card-price">$${pred.currentPrice.toFixed(2)}</div>
+                        <div class="card-price">$${formatPrice(pred.currentPrice)}</div>
 
                         <div class="stats-grid">
                             <div class="stat">
