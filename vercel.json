@@ -1,45 +1,10 @@
 {
   "version": 2,
-  "framework": null,
-  "builds": [
-    {
-      "src": "api/**/*.js",
-      "use": "@vercel/node"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/polymarket",
-      "dest": "/api/polymarket.js",
-      "methods": ["GET", "OPTIONS"]
-    },
-    {
-      "src": "/api/kalshi",
-      "dest": "/api/kalshi.js",
-      "methods": ["GET", "OPTIONS"]
-    },
-    {
-      "src": "/api/predictions",
-      "dest": "/api/predictions.js",
-      "methods": ["GET", "OPTIONS"]
-    },
-    {
-      "src": "/api/health",
-      "dest": "/api/health.js",
-      "methods": ["GET", "OPTIONS"]
-    },
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/$1.js",
-      "methods": ["GET", "OPTIONS"]
-    },
-    {
-      "src": "/(.*\\..*)",
-      "dest": "/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
-    }
+  "public": true,
+  "rewrites": [
+    { "source": "/api/predictions", "destination": "/api/predictions.js" },
+    { "source": "/api/polymarket", "destination": "/api/polymarket.js" },
+    { "source": "/api/kalshi", "destination": "/api/kalshi.js" },
+    { "source": "/api/health", "destination": "/api/health.js" }
   ]
 }
