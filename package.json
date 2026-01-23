@@ -5,7 +5,6 @@
   "main": "index.html",
   "scripts": {
     "dev": "node dev-server.cjs",
-    "build": "echo 'No build needed for static + serverless'",
     "test": "echo 'Testing API endpoints'"
   },
   "keywords": [

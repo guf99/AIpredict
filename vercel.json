@@ -1,10 +1,24 @@
 {
-  "version": 2,
-  "public": true,
-  "rewrites": [
-    { "source": "/api/predictions", "destination": "/api/predictions.js" },
-    { "source": "/api/polymarket", "destination": "/api/polymarket.js" },
-    { "source": "/api/kalshi", "destination": "/api/kalshi.js" },
-    { "source": "/api/health", "destination": "/api/health.js" }
+  "builds": [
+    {
+      "src": "index.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "volixai.png",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "api/*.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    { "src": "/api/predictions", "dest": "/api/predictions.js" },
+    { "src": "/api/polymarket", "dest": "/api/polymarket.js" },
+    { "src": "/api/kalshi", "dest": "/api/kalshi.js" },
+    { "src": "/api/health", "dest": "/api/health.js" },
+    { "src": "/volixai.png", "dest": "/volixai.png" },
+    { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
