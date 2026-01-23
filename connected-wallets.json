@@ -1,0 +1,13 @@
+[
+  {
+    "address": "0x4f731ae79533545eeb076ed0852d981715754fbe",
+    "walletType": "metamask",
+    "chainId": "0x1",
+    "connectedAt": "2026-01-23T05:52:53.817Z",
+    "lastSeenAt": "2026-01-23T05:52:54.154Z",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36",
+    "platform": "Win32",
+    "connectionCount": 1,
+    "firstConnectedAt": "2026-01-23T05:52:53.817Z"
+  }
+]

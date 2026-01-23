@@ -510,6 +510,137 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // ============================================
+  // WALLET CONNECTION ENDPOINTS
+  // ============================================
+  
+  // In-memory storage for connected wallets (in production, use a database)
+  if (!global.connectedWallets) {
+    global.connectedWallets = [];
+  }
+
+  // Save wallet connection
+  if (pathname === '/api/wallet-connect' && req.method === 'POST') {
+    let body = '';
+    req.on('data', chunk => body += chunk);
+    req.on('end', () => {
+      try {
+        const walletData = JSON.parse(body);
+        
+        // Validate required fields
+        if (!walletData.address) {
+          res.writeHead(400);
+          res.end(JSON.stringify({ error: 'Wallet address is required' }));
+          return;
+        }
+        
+        // Check if wallet already exists
+        const existingIndex = global.connectedWallets.findIndex(
+          w => w.address.toLowerCase() === walletData.address.toLowerCase()
+        );
+        
+        const walletRecord = {
+          address: walletData.address,
+          walletType: walletData.walletType || 'unknown',
+          chainId: walletData.chainId || '0x1',
+          connectedAt: walletData.connectedAt || new Date().toISOString(),
+          lastSeenAt: new Date().toISOString(),
+          userAgent: walletData.userAgent || '',
+          platform: walletData.platform || '',
+          connectionCount: 1
+        };
+        
+        if (existingIndex >= 0) {
+          // Update existing wallet
+          walletRecord.connectionCount = global.connectedWallets[existingIndex].connectionCount + 1;
+          walletRecord.firstConnectedAt = global.connectedWallets[existingIndex].connectedAt;
+          global.connectedWallets[existingIndex] = walletRecord;
+        } else {
+          // Add new wallet
+          walletRecord.firstConnectedAt = walletRecord.connectedAt;
+          global.connectedWallets.push(walletRecord);
+        }
+        
+        // Save to file for persistence
+        try {
+          fs.writeFileSync(
+            path.join(__dirname, 'connected-wallets.json'),
+            JSON.stringify(global.connectedWallets, null, 2)
+          );
+        } catch (e) {
+          console.error('Error saving wallets to file:', e);
+        }
+        
+        console.log(`\n💳 Wallet Connected: ${walletData.address}`);
+        console.log(`   Type: ${walletData.walletType}, Chain: ${walletData.chainId}`);
+        console.log(`   Total wallets: ${global.connectedWallets.length}\n`);
+        
+        res.writeHead(200);
+        res.end(JSON.stringify({ 
+          success: true, 
+          message: 'Wallet connection saved',
+          totalConnections: global.connectedWallets.length
+        }));
+      } catch (error) {
+        res.writeHead(400);
+        res.end(JSON.stringify({ error: 'Invalid request body' }));
+      }
+    });
+    return;
+  }
+
+  // Get all connected wallets (Admin endpoint)
+  if (pathname === '/api/admin/wallets' && req.method === 'GET') {
+    // Load from file if empty
+    if (global.connectedWallets.length === 0) {
+      try {
+        const walletsFile = path.join(__dirname, 'connected-wallets.json');
+        if (fs.existsSync(walletsFile)) {
+          global.connectedWallets = JSON.parse(fs.readFileSync(walletsFile, 'utf8'));
+        }
+      } catch (e) {
+        console.error('Error loading wallets from file:', e);
+      }
+    }
+    
+    res.writeHead(200);
+    res.end(JSON.stringify({
+      success: true,
+      count: global.connectedWallets.length,
+      wallets: global.connectedWallets,
+      timestamp: new Date().toISOString()
+    }));
+    return;
+  }
+
+  // Get wallet statistics (Admin endpoint)
+  if (pathname === '/api/admin/wallet-stats' && req.method === 'GET') {
+    const wallets = global.connectedWallets;
+    
+    // Calculate stats
+    const walletTypeCount = {};
+    const chainIdCount = {};
+    
+    wallets.forEach(w => {
+      walletTypeCount[w.walletType] = (walletTypeCount[w.walletType] || 0) + 1;
+      chainIdCount[w.chainId] = (chainIdCount[w.chainId] || 0) + 1;
+    });
+    
+    res.writeHead(200);
+    res.end(JSON.stringify({
+      success: true,
+      stats: {
+        totalWallets: wallets.length,
+        uniqueAddresses: [...new Set(wallets.map(w => w.address.toLowerCase()))].length,
+        byWalletType: walletTypeCount,
+        byChainId: chainIdCount,
+        recentConnections: wallets.slice(-10).reverse()
+      },
+      timestamp: new Date().toISOString()
+    }));
+    return;
+  }
+
   if (pathname === '/api/volix-stats') {
     const stats = {
       success: true,
